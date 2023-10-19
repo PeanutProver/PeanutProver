@@ -27,7 +27,7 @@ jobs:
         run: dotnet tool restore
 
       - name: Run Fantomas
-        run: dotnet fantomas . --recurse --check
+        run: dotnet fantomas . --check
 
       - name: Install dependencies
         run: dotnet restore
