@@ -1,6 +1,6 @@
 module FolParser.AtomParser
 
 open FParsec
-open Fol
+open Ast
 
 val parseAtom: (CharStream<unit> -> Reply<Atom>)

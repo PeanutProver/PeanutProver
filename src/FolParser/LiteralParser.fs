@@ -3,7 +3,7 @@ module FolParser.LiteralParser
 open FParsec
 open CommonParsers
 open AtomParser
-open Fol
+open Ast
 
 let opp = OperatorPrecedenceParser<Literal, string list, unit>()
 let expr = opp.ExpressionParser

@@ -1,6 +1,6 @@
 module FolParser.LiteralParser
 
 open FParsec
-open Fol
+open Ast
 
 val parseLiteral: (CharStream<unit> -> Reply<Literal>)
