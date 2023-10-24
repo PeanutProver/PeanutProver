@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FolParser", "FolParser\FolParser.fsproj", "{946275E6-71F3-43B2-A906-EBE23BAEAA73}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FolParser", "src\FolParser\FolParser.fsproj", "{946275E6-71F3-43B2-A906-EBE23BAEAA73}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fol", "Fol\Fol.fsproj", "{D2508D64-5012-4681-84D1-00ED2187FE3F}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Ast", "src\Ast\Ast.fsproj", "{D2508D64-5012-4681-84D1-00ED2187FE3F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

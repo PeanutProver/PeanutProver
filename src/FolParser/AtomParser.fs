@@ -2,7 +2,7 @@ module FolParser.AtomParser
 
 open FParsec
 open CommonParsers
-open Fol
+open Ast
 
 let pTrue = choice [ stringCIReturn "true" True; stringReturn "⊤" True ]
 let pFalse = choice [ stringCIReturn "false" False; stringCIReturn "⊥" False ]
