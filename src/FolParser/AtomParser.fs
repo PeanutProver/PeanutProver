@@ -9,8 +9,8 @@ let pFalse = choice [ stringCIReturn "false" False; stringCIReturn "⊥" False ]
 
 let parseAtom =
     choice
-        [ pTrue
-          pFalse
-          pipe2 (TermParser.parseTerm .>>? pstring "=") TermParser.parseTerm (fun lhs rhs -> Equals(lhs, rhs))
+        [ pTrue .>> ws
+          pFalse .>> ws
+          pipe2 (TermParser.parseTerm .>>? strWs "=") TermParser.parseTerm (fun lhs rhs -> Equals(lhs, rhs))
           pipe2 (TermParser.parseTerm .>>? strWs "<") TermParser.parseTerm (fun lhs rhs -> Less(lhs, rhs))
-          pipe2 (TermParser.parseTerm .>>? strWs ">") TermParser.parseTerm (fun lhs rhs -> Less(rhs, lhs)) ]
+          pipe2 (TermParser.parseTerm .>>? strWs ">") TermParser.parseTerm (fun lhs rhs -> Greater(lhs, rhs)) ]

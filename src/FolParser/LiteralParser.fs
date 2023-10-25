@@ -16,10 +16,10 @@ let term = choice [ between (strWs "(") (strWs ")") expr; parseAtom |>> BareAtom
 
 opp.TermParser <- term
 
-opp.AddOperator(PrefixOperator("\\exists", pVarList, 1, false, (), (fun vars rhs -> Exists(vars, rhs))))
-opp.AddOperator(PrefixOperator("\\forall", pVarList, 1, false, (), (fun vars rhs -> Forall(vars, rhs))))
-opp.AddOperator(InfixOperator("->", pEmpty, 2, Associativity.Left, (fun lhs rhs -> Implies(lhs, rhs))))
-opp.AddOperator(InfixOperator("\\/", pEmpty, 3, Associativity.Left, (fun lhs rhs -> Or(lhs, rhs))))
-opp.AddOperator(InfixOperator("/\\", pEmpty, 3, Associativity.Left, (fun lhs rhs -> And(lhs, rhs))))
+opp.AddOperator(InfixOperator("->", pEmpty, 1, Associativity.Left, (fun lhs rhs -> Implies(lhs, rhs))))
+opp.AddOperator(InfixOperator("\\/", pEmpty, 2, Associativity.Left, (fun lhs rhs -> Or(lhs, rhs))))
+opp.AddOperator(InfixOperator("/\\", pEmpty, 2, Associativity.Left, (fun lhs rhs -> And(lhs, rhs))))
+opp.AddOperator(PrefixOperator("\\exists", pVarList, 3, false, (), (fun vars rhs -> Exists(vars, rhs))))
+opp.AddOperator(PrefixOperator("\\forall", pVarList, 3, false, (), (fun vars rhs -> Forall(vars, rhs))))
 opp.AddOperator(PrefixOperator("~", pEmpty, 10, true, Not))
 let parseLiteral = opp.ExpressionParser
