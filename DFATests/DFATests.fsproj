@@ -26,8 +26,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DFA\DFA.fsproj" />
-      <ProjectReference Include="..\Fol\Fol.fsproj" />
+        <ProjectReference Include="..\DFA\DFA.fsproj"/>
+        <ProjectReference Include="..\Fol\Fol.fsproj"/>
     </ItemGroup>
 
 </Project>
