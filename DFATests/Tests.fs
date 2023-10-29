@@ -36,3 +36,7 @@ let ``DFA Union 1`` () =
             DfaResultToBool(dfa3.Recognize input),
             (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
         )
+        Assert.Equal(
+            DfaResultToBool(dfa3.Recognize [ (0, 0); (0, 0); (1, 1)]),
+            (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
+        )
