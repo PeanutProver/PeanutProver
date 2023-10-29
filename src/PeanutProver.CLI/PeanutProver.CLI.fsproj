@@ -10,6 +10,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Ast\Ast.fsproj"/>
+        <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
         <ProjectReference Include="..\DFA\DFA.fsproj"/>
         <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
     </ItemGroup>

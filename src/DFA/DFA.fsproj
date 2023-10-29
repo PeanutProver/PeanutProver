@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <RootNamespace>DFA1</RootNamespace>
+        <RootNamespace>DFA</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,7 +13,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Fol\Fol.fsproj"/>
+        <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
+        <ProjectReference Include="..\Ast\Ast.fsproj"/>
     </ItemGroup>
 
 </Project>

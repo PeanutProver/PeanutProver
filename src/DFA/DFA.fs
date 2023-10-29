@@ -174,7 +174,11 @@ module DFA =
 
                 if not exists then
                     let newState =
-                        State<_, _>($"{state1.Id}_{state2.Id}", state1.IsStart && state2.IsStart, state1.IsFinal && state2.IsFinal)
+                        State<_, _>(
+                            $"{state1.Id}_{state2.Id}",
+                            state1.IsStart && state2.IsStart,
+                            state1.IsFinal && state2.IsFinal
+                        )
 
                     if newState.IsStart then
                         newStartState <- newState
