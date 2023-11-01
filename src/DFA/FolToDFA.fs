@@ -1,6 +1,6 @@
 ﻿module PeanutProver.DFA.FolToDFA
 
-open Fol
+open Ast
 open PeanutProver.Automata
 
 let convertAtom (atom: Atom) =
