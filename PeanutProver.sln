@@ -12,6 +12,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DFA", "src\DFA\DFA.fsproj",
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DFATests", "tests\DFATests\DFATests.fsproj", "{926B6C43-EFBC-4494-8CD4-181A9A5A0D71}"
 EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
