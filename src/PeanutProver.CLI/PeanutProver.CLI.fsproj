@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Program.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Ast\Ast.fsproj"/>
+        <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
+        <ProjectReference Include="..\DFA\DFA.fsproj"/>
+        <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <RootNamespace>DFA</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="DFA.fs"/>
+        <Compile Include="PredefinedAutomata.fs"/>
+        <Compile Include="FolToDFA.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
+        <ProjectReference Include="..\Ast\Ast.fsproj"/>
+    </ItemGroup>
+
+</Project>
