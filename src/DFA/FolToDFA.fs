@@ -6,7 +6,17 @@ open PeanutProver.Automata
 let convertAtom (atom: Atom) =
     match atom with
     | Less(left, right) -> PredefinedAutomata.dfa_less
-    | Equals(left, right) -> PredefinedAutomata.dfa_eq
+    | Equals(left, right) ->
+        match left with
+        | Plus(term1, term2) -> PredefinedAutomata.dfa_sum
+        | Var a ->
+            match right with
+            | Var a -> PredefinedAutomata.dfa_eq
+            | Plus(term1, term2) -> PredefinedAutomata.dfa_sum
+            | BitwiseMinimum(term1, term2) -> PredefinedAutomata.dfa_bitwise_minimum
+            | e -> failwithf $"Unsupported term {e}"
+        | BitwiseMinimum(term1, term2) -> PredefinedAutomata.dfa_bitwise_minimum
+        | e -> failwithf $"Unsupported term {e}"
     | e -> failwithf $"Unsupported atom {e}"
 
 let rec buildProver (ast: Literal) =
