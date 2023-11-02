@@ -12,7 +12,6 @@ let main args =
             .Build()
 
     use scope = host.Services.CreateScope()
-
     let main = scope.ServiceProvider.GetRequiredService<MainAsync>()
     let lt = scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>()
 
