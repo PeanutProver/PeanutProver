@@ -33,4 +33,4 @@ opp.AddOperator(PrefixOperator("∀", pVarList, 3, false, (), (fun vars rhs -> F
 
 opp.AddOperator(PrefixOperator("~", pEmpty, 10, true, Not))
 opp.AddOperator(PrefixOperator("¬", pEmpty, 10, true, Not))
-let parseLiteral = opp.ExpressionParser
+let parseLiteral = opp.ExpressionParser .>> ws

@@ -11,7 +11,7 @@ let term =
     choice
         [ between (strWs "(") (strWs ")") expr
           pint32 .>> ws |>> Const
-          manySatisfy isAsciiLetter .>> ws |>> Var ]
+          identifier |>> Var ]
 
 opp.TermParser <- term
 
