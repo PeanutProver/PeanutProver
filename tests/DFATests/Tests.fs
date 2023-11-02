@@ -16,9 +16,9 @@ let ``DFA Not Equal`` () =
 
     Assert.True(
         DfaResultToBool(
-            dfa.Recognize[(1, 0)
-                          (0, 0)
-                          (1, 1)]
+            dfa.Recognize[[ 1; 0 ]
+                          [ 0; 0 ]
+                          [ 1; 1 ]]
         )
     )
 
@@ -30,7 +30,7 @@ let ``DFA Union 1`` () =
     let dfa3 = DFA.union dfa1 dfa2
 
     for i in 1..10 do
-        let input = List.init i (fun _ -> rnd.Next(0, 1), rnd.Next(0, 1))
+        let input = List.init i (fun _ -> [ rnd.Next(0, 1); rnd.Next(0, 1) ])
 
         Assert.Equal(
             DfaResultToBool(dfa3.Recognize input),
@@ -38,6 +38,6 @@ let ``DFA Union 1`` () =
         )
 
         Assert.Equal(
-            DfaResultToBool(dfa3.Recognize [ (0, 0); (0, 0); (1, 1) ]),
+            DfaResultToBool(dfa3.Recognize [ [ 0; 0 ]; [ 0; 0 ]; [ 1; 1 ] ]),
             (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
         )
