@@ -1,15 +1,29 @@
-﻿open PeanutProver.DFA
+﻿open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.DependencyInjection
+open PeanutProver.CLI
+open System
 
-open FParsec
+[<EntryPoint>]
+let main args =
+    use host =
+        Host
+            .CreateDefaultBuilder(args)
+            .ConfigureServices(fun hostContext services -> services.AddSingleton<MainAsync>() |> ignore)
+            .Build()
 
-let ast = run FolParser.LiteralParser.parseLiteral "x = y & z"
+    use scope = host.Services.CreateScope()
 
-let prover =
-    match ast with
-    | Success(ast, _, _) -> FolToDFA.buildProver ast
-    | Failure(_, _, _) -> failwithf "Parser error!"
+    let main = scope.ServiceProvider.GetRequiredService<MainAsync>()
+    let lt = scope.ServiceProvider.GetRequiredService<IHostApplicationLifetime>()
 
-prover.Recognize [ [ '1'; '1'; '1' ]; [ '0'; '0'; '0' ]; [ '0'; '0'; '0' ] ]
-|> fun x -> printfn $"{x}"
+    Console.CancelKeyPress
+    |> Event.add (fun evtarg ->
+        lt.StopApplication()
+        evtarg.Cancel <- true)
 
-printfn $"{ast}"
+    let mutable exitCode = 1
+
+    // TODO: Probably there must be try-catch
+    exitCode <- main.Run() |> Async.RunSynchronously
+
+    exitCode
