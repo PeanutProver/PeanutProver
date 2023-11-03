@@ -17,9 +17,9 @@ let ``DFA Not Equal`` () =
 
     Assert.True(
         DfaResultToBool(
-            dfa.Recognize[[ '1'; '0' ]
-                          [ '0'; '0' ]
-                          [ '1'; '1' ]]
+            dfa.Recognize[[ One; Zero ]
+                          [ Zero; Zero ]
+                          [ One; One ]]
         )
     )
 
@@ -29,10 +29,10 @@ let ``DFA Union 1`` () =
     let dfa2 = PredefinedAutomata.dfa_less
     let dfa3 = DFA.union dfa1 dfa2
 
-    let genBinaryChar = char (Random().Next(0, 1)) + '0'
+    let genBinaryChar () = Random().Next(0, 1) |> function 1 -> One | _ -> Zero 
 
     for i in 1..10 do
-        let input = List.init i (fun _ -> [ genBinaryChar; genBinaryChar ])
+        let input = List.init i (fun _ -> [ genBinaryChar () ; genBinaryChar () ])
 
         Assert.Equal(
             DfaResultToBool(dfa3.Recognize input),
@@ -40,6 +40,6 @@ let ``DFA Union 1`` () =
         )
 
         Assert.Equal(
-            DfaResultToBool(dfa3.Recognize [ [ '0'; '0' ]; [ '0'; '0' ]; [ '1'; '1' ] ]),
+            DfaResultToBool(dfa3.Recognize [ [ Zero; Zero ]; [ Zero; Zero ]; [ One ; One ] ]),
             (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
         )
