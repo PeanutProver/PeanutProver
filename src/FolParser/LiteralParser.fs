@@ -8,9 +8,6 @@ open Ast
 let opp = OperatorPrecedenceParser<Literal, string list, unit>()
 let expr = opp.ExpressionParser
 
-let pVarList x =
-    (ws >>. (many1 (many1Satisfy isAsciiLetter .>> ws .>> optional (strWs ",")))) x
-
 let pEmpty = preturn [] .>> ws
 let term = choice [ between (strWs "(") (strWs ")") expr; parseAtom |>> BareAtom ]
 
@@ -25,11 +22,11 @@ opp.AddOperator(InfixOperator("∨", pEmpty, 2, Associativity.Left, (fun lhs rhs
 opp.AddOperator(InfixOperator("/\\", pEmpty, 2, Associativity.Left, (fun lhs rhs -> And(lhs, rhs))))
 opp.AddOperator(InfixOperator("∧", pEmpty, 2, Associativity.Left, (fun lhs rhs -> And(lhs, rhs))))
 
-opp.AddOperator(PrefixOperator("\\exists", pVarList, 3, false, (), (fun vars rhs -> Exists(vars, rhs))))
-opp.AddOperator(PrefixOperator("∃", pVarList, 3, false, (), (fun vars rhs -> Exists(vars, rhs))))
+opp.AddOperator(PrefixOperator("\\exists", varList, 3, false, (), (fun vars rhs -> Exists(vars, rhs))))
+opp.AddOperator(PrefixOperator("∃", varList, 3, false, (), (fun vars rhs -> Exists(vars, rhs))))
 
-opp.AddOperator(PrefixOperator("\\forall", pVarList, 3, false, (), (fun vars rhs -> Forall(vars, rhs))))
-opp.AddOperator(PrefixOperator("∀", pVarList, 3, false, (), (fun vars rhs -> Forall(vars, rhs))))
+opp.AddOperator(PrefixOperator("\\forall", varList, 3, false, (), (fun vars rhs -> Forall(vars, rhs))))
+opp.AddOperator(PrefixOperator("∀", varList, 3, false, (), (fun vars rhs -> Forall(vars, rhs))))
 
 opp.AddOperator(PrefixOperator("~", pEmpty, 10, true, Not))
 opp.AddOperator(PrefixOperator("¬", pEmpty, 10, true, Not))
