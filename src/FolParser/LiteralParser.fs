@@ -5,7 +5,7 @@ open CommonParsers
 open AtomParser
 open Ast
 
-let opp = OperatorPrecedenceParser<Literal, string list, unit>()
+let opp = OperatorPrecedenceParser<Literal<_, _>, string list, unit>()
 let expr = opp.ExpressionParser
 
 let pEmpty = preturn [] .>> ws

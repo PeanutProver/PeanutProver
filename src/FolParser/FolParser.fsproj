@@ -7,11 +7,8 @@
 
     <ItemGroup>
         <Compile Include="CommonParsers.fs"/>
-        <Compile Include="TermParser.fsi"/>
         <Compile Include="TermParser.fs"/>
-        <Compile Include="AtomParser.fsi"/>
         <Compile Include="AtomParser.fs"/>
-        <Compile Include="LiteralParser.fsi"/>
         <Compile Include="LiteralParser.fs"/>
     </ItemGroup>
 
