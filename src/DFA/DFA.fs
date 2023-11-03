@@ -41,25 +41,6 @@ type Configuration<'a, 'char when 'char: equality> =
 
 type DFA<'a, 'char when 'char: equality>(startState: State<'a, 'char>) =
 
-    // let allStates, alphabet =
-    //     let allStates = HashSet<_>()
-    //     let alphabet = HashSet<_>()
-    //     let dfs (state:State<_,_>) =
-    //         let visited = HashSet<_>()
-    //         let toProcess = Stack<_> [state]
-    //         while toProcess.Count > 0 do
-    //             let currentState = toProcess.Pop()
-    //             let added = allStates.Add currentState
-    //             assert added
-    //             let added = visited.Add currentState
-    //             assert added
-    //             for (char, targetState) in  currentState.GetAllTransitions() do
-    //                 alphabet.Add char |> ignore
-    //                 if visited.Contains targetState |> not
-    //                 then toProcess.Push targetState
-    //     dfs startState
-    //     allStates, alphabet
-
     let rec step (configuration: Configuration<'a, 'char>) =
         match configuration.RestOfInput with
         | [] ->

@@ -1,17 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
         <Compile Include="CommonParsers.fs"/>
-        <Compile Include="TermParser.fsi"/>
         <Compile Include="TermParser.fs"/>
-        <Compile Include="AtomParser.fsi"/>
         <Compile Include="AtomParser.fs"/>
-        <Compile Include="LiteralParser.fsi"/>
         <Compile Include="LiteralParser.fs"/>
     </ItemGroup>
 

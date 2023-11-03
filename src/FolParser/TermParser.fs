@@ -4,7 +4,7 @@ open FParsec
 open CommonParsers
 open Ast
 
-let opp = OperatorPrecedenceParser<Term, unit, unit>()
+let opp = OperatorPrecedenceParser<Term<_, _>, unit, unit>()
 let expr = opp.ExpressionParser
 
 let term =
