@@ -11,3 +11,5 @@ let identifier: Parser<string, unit> =
 
     many1Satisfy2L isIdentifierFirstChar isIdentifierChar "identifier" .>> ws // skips trailing whitespace
 
+let varList x =
+    (ws >>. (many1 (identifier .>> ws .>> optional (strWs ",")))) x
