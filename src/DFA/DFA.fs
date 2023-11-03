@@ -2,8 +2,10 @@
 
 open System.Collections.Generic
 
-type State<'a, 'char when 'char: equality>(id: 'a, isStart: bool, isFinal: bool) =
-    let transitions = Dictionary<'char, State<'a, 'char>>()
+type bit = One | Zero 
+
+type State<'a>(id: 'a, isStart: bool, isFinal: bool) =
+    let transitions = Dictionary<bit list, State<'a>>()
 
     member this.AddTransition tupleOfChars state =
         if transitions.ContainsKey(tupleOfChars) then
@@ -25,42 +27,22 @@ type State<'a, 'char when 'char: equality>(id: 'a, isStart: bool, isFinal: bool)
         [ for kvp in transitions -> kvp.Key, kvp.Value ]
 
 
-type Result<'a, 'char when 'char: equality> =
+type Result<'a> =
     | Accept
-    | Partial of list<'char>
-    | Fail of State<'a, 'char>
+    | Partial of bit list list
+    | Fail of State<'a>
 
 [<Struct>]
-type Configuration<'a, 'char when 'char: equality> =
-    val CurrentState: State<'a, 'char>
-    val RestOfInput: list<'char>
+type Configuration<'a> =
+    val CurrentState: State<'a>
+    val RestOfInput: bit list list
 
     new(state, rest) =
         { CurrentState = state
           RestOfInput = rest }
 
-type DFA<'a, 'char when 'char: equality>(startState: State<'a, 'char>) =
-
-    // let allStates, alphabet =
-    //     let allStates = HashSet<_>()
-    //     let alphabet = HashSet<_>()
-    //     let dfs (state:State<_,_>) =
-    //         let visited = HashSet<_>()
-    //         let toProcess = Stack<_> [state]
-    //         while toProcess.Count > 0 do
-    //             let currentState = toProcess.Pop()
-    //             let added = allStates.Add currentState
-    //             assert added
-    //             let added = visited.Add currentState
-    //             assert added
-    //             for (char, targetState) in  currentState.GetAllTransitions() do
-    //                 alphabet.Add char |> ignore
-    //                 if visited.Contains targetState |> not
-    //                 then toProcess.Push targetState
-    //     dfs startState
-    //     allStates, alphabet
-
-    let rec step (configuration: Configuration<'a, 'char>) =
+type DFA<'a>(startState: State<'a>) =
+    let rec step (configuration: Configuration<'a>) =
         match configuration.RestOfInput with
         | [] ->
             if configuration.CurrentState.IsFinal then
@@ -81,9 +63,9 @@ type DFA<'a, 'char when 'char: equality>(startState: State<'a, 'char>) =
         let edges = ResizeArray<_>()
         let mutable firstFreeNodeId = 0
 
-        let dfs (state: State<_, _>) =
-            let toProcess = Stack<State<_, _> * (int -> unit)>[(state, (fun _ -> ()))]
-            let copyOfState = Dictionary<State<_, _>, int>()
+        let dfs (state: State<_>) =
+            let toProcess = Stack<State<_> * (int -> unit)>[(state, (fun _ -> ()))]
+            let copyOfState = Dictionary<State<_>, int>()
 
             while toProcess.Count > 0 do
                 let state, addTransitions = toProcess.Pop()
@@ -129,10 +111,10 @@ type DFA<'a, 'char when 'char: equality>(startState: State<'a, 'char>) =
 // member this.Alphabet = alphabet
 
 module DFA =
-    let complement (dfa: DFA<_, _>) =
-        let dfs (state: State<_, _>) =
+    let complement (dfa: DFA<_>) =
+        let dfs (state: State<_>) =
             let mutable newStartState = Unchecked.defaultof<_>
-            let toProcess = Stack<State<_, _> * (State<_, _> -> unit)>[(state, (fun _ -> ()))]
+            let toProcess = Stack<State<_> * (State<_> -> unit)>[(state, (fun _ -> ()))]
             let copyOfState = Dictionary<_, _>()
 
             while toProcess.Count > 0 do
@@ -140,7 +122,7 @@ module DFA =
                 let exists, newState = copyOfState.TryGetValue state
 
                 if not exists then
-                    let newState = State<_, _>(state.Id, state.IsStart, not state.IsFinal)
+                    let newState = State<_>(state.Id, state.IsStart, not state.IsFinal)
 
                     if newState.IsStart then
                         newStartState <- newState
@@ -159,12 +141,12 @@ module DFA =
         let newStartState = dfs dfa.StartState
         DFA(newStartState)
 
-    let intersection (dfa1: DFA<_, _>) (dfa2: DFA<_, _>) =
-        let dfs (state1: State<_, _>) (state2: State<_, _>) =
+    let intersection (dfa1: DFA<_>) (dfa2: DFA<_>) =
+        let dfs (state1: State<_>) (state2: State<_>) =
             let mutable newStartState = Unchecked.defaultof<_>
 
             let toProcess =
-                Stack<State<_, _> * State<_, _> * (State<_, _> -> unit)>[(state1, state2, (fun _ -> ()))]
+                Stack<State<_> * State<_> * (State<_> -> unit)>[(state1, state2, (fun _ -> ()))]
 
             let copyOfState = Dictionary<_, _>()
 
@@ -174,7 +156,7 @@ module DFA =
 
                 if not exists then
                     let newState =
-                        State<_, _>(
+                        State<_>(
                             $"{state1.Id}_{state2.Id}",
                             state1.IsStart && state2.IsStart,
                             state1.IsFinal && state2.IsFinal
@@ -205,6 +187,3 @@ module DFA =
 
     let union dfa1 dfa2 =
         complement (intersection (complement dfa1) (complement dfa2))
-
-// let minimization dfa =
-//     let statesSets = Dictionary<_,_>()
