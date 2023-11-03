@@ -3,7 +3,7 @@
 open Ast
 open PeanutProver.Automata
 
-let convertAtom (atom: Atom) =
+let convertAtom atom =
     match atom with
     | Less(left, right) -> PredefinedAutomata.dfa_less
     | Equals(left, right) ->
@@ -19,7 +19,7 @@ let convertAtom (atom: Atom) =
         | e -> failwithf $"Unsupported term {e}"
     | e -> failwithf $"Unsupported atom {e}"
 
-let rec buildProver (ast: Literal) =
+let rec buildProver ast =
     match ast with
     | BareAtom a -> convertAtom a
     | Or(left, right) ->
