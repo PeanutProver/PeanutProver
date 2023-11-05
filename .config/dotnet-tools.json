@@ -13,12 +13,6 @@
       "commands": [
         "dotnet-fsharplint"
       ]
-    },
-    "fantomas-tool": {
-      "version": "4.7.9",
-      "commands": [
-        "fantomas"
-      ]
     }
   }
 }
