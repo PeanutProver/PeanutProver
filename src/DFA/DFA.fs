@@ -35,7 +35,7 @@ type Result<'a, 'char when 'char: equality> =
 [<Struct>]
 type Configuration<'a> =
     val CurrentState: State<'a>
-    val RestOfInput: list<bit list>
+    val RestOfInput: bit list list 
 
     new(state, rest) =
         { CurrentState = state

@@ -72,7 +72,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 let args = args |> Option.toList |> List.concat |> List.map Common.strToBits in
                 let run = snd f in
                 let dfa = run args in
-                let result = dfa.Recognize([]) in // what happens with list??? TODO()
+                let result = dfa.Recognize([])
 
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
