@@ -30,7 +30,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 
     let _cancellationToken = hostApplicationLifetime.ApplicationStopping
     let mutable _isRunning = true
-    let _automata = Dictionary<string, _>()
+    let _automata = Dictionary<_, _>()
 
     let value =
         many1 (many1SatisfyL isDigit "decimal" .>> ws .>> optional (strWs ",")) .>> ws
@@ -48,70 +48,38 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 
     let generateZeroes n = Seq.init n (fun _ -> '0')
 
-    let doOp op =
-        match op with
+    let doOp = function 
         | Def(name, vars, formula) ->
             // TODO: Cross check bound vars if we use DFA
             // TODO: Should we catch exceptions here at all?
-            try
-                let startScope =
-                    vars
-                    |> function
-                        | None -> Ident.start
-                        | Some vars -> Ident.start.Enter(vars) in
+            let vars = vars |> Option.toList |> List.concat in 
+            let startScope = vars |> Ident.start.Enter
+            in 
 
-                let formula = Passes.assignId startScope formula in
+            let formula = Passes.assignId startScope formula in
 
-                let cont =
-                    fun values ->
-                        let formula =
+            let cont values =
+                let globals = List.map startScope.Look vars in
+                formula
+                |> Passes.substituteConstant globals values 
+                |>  FolToDFA.buildProver
+            in 
 
-                            let vars = Option.toList vars |> List.concat in
-                            List.iter (printfn "var: %A") vars
-                            List.iter (printfn "val: %A") values
-                            let globals = List.map startScope.Look vars in
-                            formula |> Passes.substituteConstant globals values in
-
-                        FolToDFA.buildProver formula in
-
-                _automata[name] <- (formula, cont)
-            with ex ->
-                PromptPlus.WriteLine(ex.Message) |> ignore
-
-        | Eval(name, vars) ->
+            _automata[name] <- (formula, cont)
+        | Eval(name, args) ->
             match _automata.TryGetValue name with
             | true, f ->
-                let result =
-                    match vars with
-                    | None -> (snd f <| []) |> fun x -> x.Recognize []
-                    | Some vars ->
-                        let lsbStrings =
-                            vars
-                            |> Seq.map Convert.ToInt32
-                            |> Seq.map (fun x -> Convert.ToString(x, 2))
-                            |> Seq.map Seq.rev
-
-                        let longestValue = Seq.maxBy Seq.length lsbStrings |> Seq.length
-
-                        let automatonInput =
-                            lsbStrings
-                            |> Seq.map (fun x ->
-                                let zeroCount = longestValue - Seq.length x
-                                Seq.append x (generateZeroes zeroCount))
-                            |> Seq.transpose
-                            |> Seq.map Seq.toList
-                            |> Seq.toList
-
-                        Seq.toList automatonInput |> (snd f) |> (fun x -> x.Recognize [])
+                let args = args |> Option.toList |> List.concat |> List.map Common.strToBits in
+                let run = snd f in
+                let dfa = run args in
+                let result = dfa.Recognize([]) in // what happens with list??? TODO()
 
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
-
         | Show name ->
             match _automata.TryGetValue name with
             | true, (formula, _) -> PromptPlus.WriteLine $"{name} ⇔ {formula}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
-
         | Help -> PromptPlus.WriteLine _help |> ignore
         | Quit -> _isRunning <- false
 
@@ -138,7 +106,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 | Failure(message, _, _) -> PromptPlus.WriteLine(message) |> ignore
 
             with e ->
-                printf "Error: %s" e.Message
+                PromptPlus.WriteLine(e.Message) |> ignore
 
             if input.IsAborted then
                 _isRunning <- false

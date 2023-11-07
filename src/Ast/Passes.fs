@@ -58,7 +58,7 @@ let substituteConstant globals values =
         | BitwiseMinimum(left, right) -> BitwiseMinimum(term left, term right)
         | Plus(left, right) -> Plus(term left, term right)
         | Mult(left, right) -> Mult(term left, term right)
-        | Const _ -> failwith "not supported"
+        | Const v -> Const <| Common.intToBits v 
         | Var name -> if isGlobal name then Const <| getValue name else Var name
 
     let rec atom =
