@@ -94,7 +94,6 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
         else if String.IsNullOrWhiteSpace input.Value then
             loop ()
         else
-
             try
                 let parseResult = run (parseInput .>> eof) input.Value
 
