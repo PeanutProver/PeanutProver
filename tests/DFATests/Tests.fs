@@ -4,6 +4,7 @@ open PeanutProver.Automata
 open PeanutProver.DFA
 open Xunit
 open System
+open Ast.Common
 
 let DfaResultToBool result =
     match result with
@@ -17,9 +18,9 @@ let ``DFA Not Equal`` () =
 
     Assert.True(
         DfaResultToBool(
-            dfa.Recognize[[ One; Zero ]
-                          [ Zero; Zero ]
-                          [ One; One ]]
+            dfa.Recognize[[ O; Z ]
+                          [ Z; Z ]
+                          [ O; O ]]
         )
     )
 
@@ -29,10 +30,15 @@ let ``DFA Union 1`` () =
     let dfa2 = PredefinedAutomata.dfa_less
     let dfa3 = DFA.union dfa1 dfa2
 
-    let genBinaryChar () = Random().Next(0, 1) |> function 1 -> One | _ -> Zero 
+    let genBinaryChar () =
+        (Random().Next(0, 1))
+        |> function
+            | 0 -> Z
+            | 1 -> O
+            | _ -> failwith "Int not always bit"
 
     for i in 1..10 do
-        let input = List.init i (fun _ -> [ genBinaryChar () ; genBinaryChar () ])
+        let input = List.init i (fun _ -> [ genBinaryChar (); genBinaryChar () ])
 
         Assert.Equal(
             DfaResultToBool(dfa3.Recognize input),
@@ -40,6 +46,6 @@ let ``DFA Union 1`` () =
         )
 
         Assert.Equal(
-            DfaResultToBool(dfa3.Recognize [ [ Zero; Zero ]; [ Zero; Zero ]; [ One ; One ] ]),
+            DfaResultToBool(dfa3.Recognize [ [ Z; Z ]; [ Z; Z ]; [ O; O ] ]),
             (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
         )

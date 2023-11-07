@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="MainAsync.fs"/>
         <Compile Include="Program.fs"/>
     </ItemGroup>
 
@@ -14,6 +15,12 @@
         <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
         <ProjectReference Include="..\DFA\DFA.fsproj"/>
         <ProjectReference Include="..\FolParser\FolParser.fsproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0"/>
+        <PackageReference Include="PromptPlus" Version="4.1.0"/>
     </ItemGroup>
 
 </Project>

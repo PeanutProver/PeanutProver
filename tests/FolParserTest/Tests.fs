@@ -2,7 +2,7 @@ module Tests
 
 open Xunit
 open FParsec
-open Ast
+open Ast.Ast
 open FolParser.LiteralParser
 open FsUnit.Xunit
 

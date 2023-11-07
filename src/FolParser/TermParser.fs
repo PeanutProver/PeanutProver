@@ -2,16 +2,16 @@ module FolParser.TermParser
 
 open FParsec
 open CommonParsers
-open Ast
+open Ast.Ast
 
-let opp = OperatorPrecedenceParser<Term, unit, unit>()
+let opp = OperatorPrecedenceParser<Term<_, _>, unit, unit>()
 let expr = opp.ExpressionParser
 
 let term =
     choice
         [ between (strWs "(") (strWs ")") expr
           pint32 .>> ws |>> Const
-          manySatisfy isAsciiLetter .>> ws |>> Var ]
+          identifier |>> Var ]
 
 opp.TermParser <- term
 

@@ -2,7 +2,7 @@
 
 open System.Collections.Generic
 
-type bit = One | Zero 
+open Ast.Common
 
 type State<'a>(id: 'a, isStart: bool, isFinal: bool) =
     let transitions = Dictionary<bit list, State<'a>>()
