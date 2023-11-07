@@ -1,8 +1,8 @@
-module PeanutProver.CLI.Translate
+module Ast.Passes
 
-open Ast
+open Ast.Ast
 
-let assign scope =
+let assignId scope =
     let rec term (scope: Ident.Scope) expr =
         let term = term scope in
 
