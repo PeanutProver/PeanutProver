@@ -1,4 +1,4 @@
-﻿open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open PeanutProver.CLI
 open System

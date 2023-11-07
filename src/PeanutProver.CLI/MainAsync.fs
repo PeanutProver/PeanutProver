@@ -48,22 +48,19 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 
     let generateZeroes n = Seq.init n (fun _ -> '0')
 
-    let doOp = function 
+    let doOp =
+        function
         | Def(name, vars, formula) ->
             // TODO: Cross check bound vars if we use DFA
             // TODO: Should we catch exceptions here at all?
-            let vars = vars |> Option.toList |> List.concat in 
-            let startScope = vars |> Ident.start.Enter
-            in 
+            let vars = vars |> Option.toList |> List.concat in
+            let startScope = vars |> Ident.start.Enter in
 
             let formula = Passes.assignId startScope formula in
 
             let cont values =
                 let globals = List.map startScope.Look vars in
-                formula
-                |> Passes.substituteConstant globals values 
-                |>  FolToDFA.buildProver
-            in 
+                formula |> Passes.substituteConstant globals values |> FolToDFA.buildProver in
 
             _automata[name] <- (formula, cont)
         | Eval(name, args) ->
@@ -72,7 +69,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 let args = args |> Option.toList |> List.concat |> List.map Common.strToBits in
                 let run = snd f in
                 let dfa = run args in
-                let result = dfa.Recognize([]) in // what happens with list??? TODO()
+                let result = dfa.Recognize([])
 
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
@@ -97,7 +94,6 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
         else if String.IsNullOrWhiteSpace input.Value then
             loop ()
         else
-
             try
                 let parseResult = run (parseInput .>> eof) input.Value
 

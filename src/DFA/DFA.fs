@@ -2,7 +2,7 @@
 
 open System.Collections.Generic
 
-type bit = One | Zero
+open Ast.Common
 
 type State<'a>(id: 'a, isStart: bool, isFinal: bool) =
     let transitions = Dictionary<bit list, State<'a>>()
@@ -41,9 +41,8 @@ type Configuration<'a> =
         { CurrentState = state
           RestOfInput = rest }
 
-type DFA<'a, 'char when 'char: equality>(startState: State<'a, 'char>) =
-
-    let rec step (configuration: Configuration<'a, 'char>) =
+type DFA<'a>(startState: State<'a>) =
+    let rec step (configuration: Configuration<'a>) =
         match configuration.RestOfInput with
         | [] ->
             if configuration.CurrentState.IsFinal then
