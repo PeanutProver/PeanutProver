@@ -6,7 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Translate.fs" />
         <Compile Include="MainAsync.fs"/>
         <Compile Include="Program.fs"/>
     </ItemGroup>
