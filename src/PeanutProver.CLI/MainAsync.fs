@@ -2,13 +2,13 @@ namespace PeanutProver.CLI
 
 open System
 open System.Collections.Generic
+open Ast.Ast
 open Ast
 open Microsoft.Extensions.Hosting
 open PPlus
 open FParsec
 open FolParser.CommonParsers
 open FolParser.LiteralParser
-open PeanutProver.Automata
 open PeanutProver.DFA
 
 type Operation<'a, 'b> =
@@ -60,7 +60,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                         | None -> Ident.start
                         | Some vars -> Ident.start.Enter(vars) in
 
-                let formula = Translate.assign startScope formula in
+                let formula = Passes.assignId startScope formula in
 
                 let cont =
                     fun values ->
@@ -70,7 +70,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                             List.iter (printfn "var: %A") vars
                             List.iter (printfn "val: %A") values
                             let globals = List.map startScope.Look vars in
-                            formula |> Translate.substituteConstant globals values in
+                            formula |> Passes.substituteConstant globals values in
 
                         FolToDFA.buildProver formula in
 

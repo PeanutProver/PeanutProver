@@ -2,7 +2,7 @@ module FolParser.TermParser
 
 open FParsec
 open CommonParsers
-open Ast
+open Ast.Ast
 
 let opp = OperatorPrecedenceParser<Term<_, _>, unit, unit>()
 let expr = opp.ExpressionParser
