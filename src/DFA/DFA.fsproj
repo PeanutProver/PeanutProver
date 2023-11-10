@@ -10,6 +10,7 @@
         <Compile Include="DFA.fs"/>
         <Compile Include="PredefinedAutomata.fs"/>
         <Compile Include="FolToDFA.fs"/>
+        <Compile Include="NFA.fs"/>
     </ItemGroup>
 
     <ItemGroup>
