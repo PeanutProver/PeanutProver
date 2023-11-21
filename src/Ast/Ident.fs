@@ -3,6 +3,8 @@ module Ast.Ident
 open System.Collections
 type id = Id of int * string
 
+let id_fst (Id(fst, _)) = fst
+
 let private stack = Stack()
 
 type Scope(init, map) =
@@ -23,4 +25,4 @@ type Scope(init, map) =
         |> Option.defaultWith (fun () -> failwith $"Undefined name %s{name}")
         |> fun value -> Id(value, name)
 
-let start = Scope(0, Map.empty)
+let start () = Scope(-1, Map.empty)

@@ -19,6 +19,8 @@ type Operation<'a, 'b> =
     | Quit
     | Dot of string
 
+open Ident
+
 type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
     let _help =
         """Available commands:
@@ -56,23 +58,37 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             // TODO: Cross check bound vars if we use DFA
             // TODO: Should we catch exceptions here at all?
             let vars = vars |> Option.toList |> List.concat in
-            let startScope = vars |> Ident.start.Enter in
+            let startScope = vars |> (Ident.start ()).Enter in
 
             let formula = Passes.assignId startScope formula in
+            let names = Passes.grab_names formula |> List.rev
+            let global_names = List.map (startScope.Look) vars
 
-            let cont values =
-                let globals = List.map startScope.Look vars in
-                formula |> Passes.substituteConstant globals values |> FolToDFA.buildProver in
+            let permutation =
+                List.mapi (fun index name -> index, List.findIndex ((=) name) names) global_names
+                |> Map.ofList
+                |> fun map number -> Map.find number map
 
-            _automata[name] <- (formula, cont)
+            let dfa = FolToDFA.buildProver formula
+
+            _automata[name] <- ((formula, permutation), dfa)
         | Eval(name, args) ->
             match _automata.TryGetValue name with
             | true, f ->
-                let args = args |> Option.toList |> List.concat |> List.map Common.strToBits in
-                let run = snd f in
-                let dfa = run args in
-                let result = dfa.Recognize([])
 
+                let perm = f |> fst |> snd in
+
+                let args =
+                    args
+                    |> Option.toList
+                    |> List.concat
+                    |> List.map Common.strToBits
+                    |> List.map Seq.toList
+                    |> List.permute perm
+                    |> List.transpose in
+
+                let dfa = snd f in
+                let result = dfa.Recognize(args)
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
         | Show name ->

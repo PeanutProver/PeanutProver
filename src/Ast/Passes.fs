@@ -80,3 +80,38 @@ let substituteConstant globals values =
         | Forall(names, next) -> (names, liter next) |> Forall in
 
     liter
+
+open Ident
+
+let grab_names =
+    let filter fst snd =
+        List.filter (fun item -> not <| List.exists ((=) item) snd) fst
+        |> List.append snd in
+
+    let rec term (arg: Term<id, _>) =
+        match arg with
+        | BitwiseMinimum(left, right)
+        | Plus(left, right)
+        | Mult(left, right) -> filter (term left) (term right)
+        | Const v -> []
+        | Var name -> [ name ]
+
+    let rec atom =
+        function
+        | True
+        | False -> []
+        | Equals(left, right)
+        | Less(left, right)
+        | Greater(left, right) -> filter (term left) (term right)
+
+    let rec liter =
+        function
+        | BareAtom a -> atom a
+        | Not l -> liter l
+        | And(left, right)
+        | Or(left, right)
+        | Implies(left, right) -> filter (liter left) (liter right)
+        | Exists(_, next)
+        | Forall(_, next) -> liter next
+
+    liter
