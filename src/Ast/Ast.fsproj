@@ -7,10 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Common.fs" />
-        <Compile Include="Ident.fs" />
-        <Compile Include="Ast.fs" />
-        <Compile Include="Passes.fs" />
+        <Compile Include="Common.fs"/>
+        <Compile Include="Ident.fs"/>
+        <Compile Include="Ast.fs"/>
+        <Compile Include="Passes.fs"/>
     </ItemGroup>
 
 </Project>
