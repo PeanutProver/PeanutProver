@@ -1,5 +1,6 @@
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
+open PPlus
 open PeanutProver.CLI
 open System
 
@@ -24,6 +25,7 @@ let main args =
     let mutable exitCode = 1
 
     // TODO: Probably there must be try-catch
-    exitCode <- main.Run() |> Async.RunSynchronously
+    // exitCode <- main.Run() |> Async.RunSynchronously
+    using (PromptPlus.EscapeColorTokens()) (fun _ -> exitCode <- main.Run() |> Async.RunSynchronously)
 
     exitCode
