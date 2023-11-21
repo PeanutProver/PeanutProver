@@ -17,6 +17,7 @@ type Operation<'a, 'b> =
     | Show of string
     | Help
     | Quit
+    | Dot of string
 
 type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
     let _help =
@@ -44,7 +45,8 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
               |>> Eval
               strWs "show" >>. identifier |>> Show
               strWs "help" >>% Help
-              strWs "quit" >>% Quit ]
+              strWs "quit" >>% Quit
+              strWs "dot" >>. identifier |>> Dot ]
 
     let generateZeroes n = Seq.init n (fun _ -> '0')
 
@@ -79,6 +81,10 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
         | Help -> PromptPlus.WriteLine _help |> ignore
         | Quit -> _isRunning <- false
+        | Dot name ->
+            match _automata.TryGetValue name with
+            | true, (_, automaton) -> PromptPlus.WriteLine $"{automaton.ToDot()}" |> ignore
+            | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
 
     let rec loop () =
         let input =
