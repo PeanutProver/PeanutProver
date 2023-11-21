@@ -18,9 +18,9 @@ let ``DFA Not Equal`` () =
 
     Assert.True(
         DfaResultToBool(
-            dfa.Recognize[[ O; Z ]
-                          [ Z; Z ]
-                          [ O; O ]]
+            dfa.Recognize[[ One; Zero ]
+                          [ Zero; Zero ]
+                          [ One; One ]]
         )
     )
 
@@ -33,8 +33,8 @@ let ``DFA Union 1`` () =
     let genBinaryChar () =
         (Random().Next(0, 1))
         |> function
-            | 0 -> Z
-            | 1 -> O
+            | 0 -> Zero
+            | 1 -> One
             | _ -> failwith "Int not always bit"
 
     for i in 1..10 do
@@ -46,6 +46,6 @@ let ``DFA Union 1`` () =
         )
 
         Assert.Equal(
-            DfaResultToBool(dfa3.Recognize [ [ Z; Z ]; [ Z; Z ]; [ O; O ] ]),
+            DfaResultToBool(dfa3.Recognize [ [ Zero; Zero ]; [ Zero; Zero ]; [ One; One ] ]),
             (DfaResultToBool(dfa1.Recognize input) || DfaResultToBool(dfa2.Recognize input))
         )
