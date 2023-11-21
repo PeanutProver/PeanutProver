@@ -100,15 +100,15 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
         else if String.IsNullOrWhiteSpace input.Value then
             loop ()
         else
-            try
-                let parseResult = run (parseInput .>> eof) input.Value
+            // try
+            let parseResult = run (parseInput .>> eof) input.Value
 
-                match parseResult with
-                | Success(operation, _, _) -> doOp operation
-                | Failure(message, _, _) -> PromptPlus.WriteLine(message) |> ignore
+            match parseResult with
+            | Success(operation, _, _) -> doOp operation
+            | Failure(message, _, _) -> PromptPlus.WriteLine(message) |> ignore
 
-            with e ->
-                PromptPlus.WriteLine(e.Message) |> ignore
+            // with e ->
+            // PromptPlus.WriteLine(e.Message) |> ignore
 
             if input.IsAborted then
                 _isRunning <- false
