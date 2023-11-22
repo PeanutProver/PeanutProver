@@ -19,7 +19,6 @@ type Operation<'a, 'b> =
     | Quit
     | Dot of string
 
-open Ident
 
 type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
     let _help =
@@ -76,6 +75,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             match _automata.TryGetValue name with
             | true, f ->
                 let perm = f |> fst |> snd in
+
                 let args =
                     args
                     |> Option.toList

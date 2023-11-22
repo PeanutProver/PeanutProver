@@ -27,19 +27,29 @@ let rec buildProver ast numberOfVars =
     | Or(left, right) ->
         let dfa_left = buildProver left numberOfVars
         let dfa_right = buildProver right numberOfVars
-        let dfa_left_vars_number = dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
-        let dfa_right_vars_number = dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
+        let dfa_left_vars_number =
+            dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
+        let dfa_right_vars_number =
+            dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
         DFA.union
             (DFA.inflateTransitions (numberOfVars - dfa_left_vars_number) false dfa_left)
             (DFA.inflateTransitions (numberOfVars - dfa_right_vars_number) true dfa_right)
     | And(left, right) ->
         let dfa_left = buildProver left numberOfVars
         let dfa_right = buildProver right numberOfVars
-        let dfa_left_vars_number = dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
-        let dfa_right_vars_number = dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
+        let dfa_left_vars_number =
+            dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
+        let dfa_right_vars_number =
+            dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
         DFA.intersection
             (DFA.inflateTransitions (numberOfVars - dfa_left_vars_number) false dfa_left)
-            (DFA.inflateTransitions (numberOfVars - dfa_right_vars_number) true  dfa_right)
+            (DFA.inflateTransitions (numberOfVars - dfa_right_vars_number) true dfa_right)
     | Not expr ->
         let dfa_expr = buildProver expr numberOfVars
         DFA.complement dfa_expr

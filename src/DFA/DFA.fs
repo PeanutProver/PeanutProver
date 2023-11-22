@@ -212,7 +212,7 @@ module DFA =
     let union dfa1 dfa2 =
         complement (intersection (complement dfa1) (complement dfa2))
 
-    
+
     let rec update_trans trans in_head =
         if in_head then
             [ Zero :: trans; One :: trans ]
@@ -221,31 +221,35 @@ module DFA =
 
     let add_transitions_range (from_state: State<_>) (trans_list: bit list list) (to_state: State<_>) =
         List.iter (fun x -> from_state.AddTransition x to_state) trans_list
+
     let rec inflateTransitions (n: int) (inHead: bool) (dfa: DFA<_>) =
-        if n = 0 then dfa
+        if n = 0 then
+            dfa
         else
             let findByOld seqPairs (old: State<'a>) =
                 Seq.pick
                     (fun (oldS: State<'a>, newS) ->
                         match oldS with
-                        | oldS when oldS.Id = old.Id ->
-                            Some newS
+                        | oldS when oldS.Id = old.Id -> Some newS
                         | _ -> None)
                     seqPairs
 
             let allStatesOld = dfa.AllStates
-            
+
             let allStatesNew = HashSet()
+
             for state in allStatesOld do
-                allStatesNew.Add (State<_> (state.Id + "'", state.IsStart, state.IsFinal)) |> ignore
-                
+                allStatesNew.Add(State<_>(state.Id + "'", state.IsStart, state.IsFinal))
+                |> ignore
+
             let allStatesZipped = Seq.zip allStatesOld allStatesNew
 
-            Seq.iter (fun (oldState: State<_>, newState: State<_>) ->
-                oldState.GetAllTransitions()
-                |> List.iter (fun (tr, st) ->
-                    add_transitions_range newState (update_trans tr inHead) (findByOld allStatesZipped st))
-                ) allStatesZipped
+            Seq.iter
+                (fun (oldState: State<_>, newState: State<_>) ->
+                    oldState.GetAllTransitions()
+                    |> List.iter (fun (tr, st) ->
+                        add_transitions_range newState (update_trans tr inHead) (findByOld allStatesZipped st)))
+                allStatesZipped
 
             let startStateNew =
                 allStatesNew
@@ -253,5 +257,5 @@ module DFA =
                     match x with
                     | x when x.IsStart -> Some x
                     | _ -> None)
-           
+
             inflateTransitions (n - 1) inHead (DFA startStateNew)
