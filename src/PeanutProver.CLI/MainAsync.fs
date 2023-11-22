@@ -10,6 +10,8 @@ open FParsec
 open FolParser.CommonParsers
 open FolParser.LiteralParser
 open PeanutProver.DFA
+open PeanutProver.DFA.Common
+open PeanutProver.Automata
 
 type Operation<'a, 'b> =
     | Def of string * string list option * Literal<'a, 'b>
@@ -58,6 +60,8 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             // TODO: Cross check bound vars if we use DFA
             // TODO: Should we catch exceptions here at all?
             let vars = vars |> Option.toList |> List.concat in
+            // let distinct = vars |> Seq.distinct |> Seq.length in
+            // if distinct != vars.Length then failwith "Vars must be distinct!"
             let startScope = vars |> (Ident.start ()).Enter in
 
             let formula = Passes.assignId startScope formula in
@@ -69,14 +73,23 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 |> Map.ofList
                 |> fun map number -> Map.find number map
 
+            let get_name (Id(_, name)) = name
+
             let dfa, automation_vars = FolToDFA.buildProver formula
 
-            _automata[name] <- ((formula, permutation), dfa)
+            let automation_indices =
+                automation_vars
+                |> List.map (fun i -> List.findIndex (fun var_name -> get_name i = var_name) vars)
+
+            let new_transitions =
+                renumber_transitions dfa.Transitions vars.Length automation_indices
+
+            let dfa = DFA(dfa.StartState, dfa.FinalStates, new_transitions)
+
+            _automata[name] <- (formula, dfa)
         | Eval(name, args) ->
             match _automata.TryGetValue name with
-            | true, f ->
-
-                let perm = f |> fst |> snd in
+            | true, (_, dfa) ->
 
                 let args =
                     args
@@ -84,10 +97,8 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                     |> List.concat
                     |> List.map Common.strToBits
                     |> List.map Seq.toList
-                    |> List.permute perm
                     |> List.transpose in
 
-                let dfa = snd f in
                 let result = dfa.Recognize(args)
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
