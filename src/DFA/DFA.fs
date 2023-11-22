@@ -4,7 +4,7 @@ open System.Collections.Generic
 
 open Ast.Common
 
-type State<'a>(id: 'a, isStart: bool, isFinal: bool) =
+type State<'a when 'a: equality>(id: 'a, isStart: bool, isFinal: bool) =
     let transitions = Dictionary<bit list, State<'a>>()
 
     member this.AddTransition tupleOfChars state =
@@ -27,13 +27,13 @@ type State<'a>(id: 'a, isStart: bool, isFinal: bool) =
         [ for kvp in transitions -> kvp.Key, kvp.Value ]
 
 
-type Result<'a> =
+type Result<'a when 'a: equality> =
     | Accept
     | Partial of bit list list
     | Fail of State<'a>
 
 [<Struct>]
-type Configuration<'a> =
+type Configuration<'a when 'a: equality> =
     val CurrentState: State<'a>
     val RestOfInput: bit list list
 
@@ -41,7 +41,7 @@ type Configuration<'a> =
         { CurrentState = state
           RestOfInput = rest }
 
-type DFA<'a>(startState: State<'a>) =
+type DFA<'a when 'a: equality>(startState: State<'a>) =
     let rec step (configuration: Configuration<'a>) =
         match configuration.RestOfInput with
         | [] ->
@@ -54,6 +54,29 @@ type DFA<'a>(startState: State<'a>) =
             match configuration.CurrentState.GoesTo hd with
             | None -> Partial configuration.RestOfInput
             | Some nextState -> step (Configuration(nextState, tl))
+
+    let allStates, alphabet =
+        let allStates = HashSet<_>()
+        let alphabet = HashSet<_>()
+
+        let dfs (state: State<_>) =
+            let visited = HashSet<_>()
+            let toProcess = Stack<_> [ state ]
+
+            while toProcess.Count > 0 do
+                let currentState = toProcess.Pop()
+                let added = allStates.Add currentState
+                // assert added
+                let added = visited.Add currentState
+                // assert added
+                for (char, targetState) in currentState.GetAllTransitions() do
+                    alphabet.Add char |> ignore
+
+                    if visited.Contains targetState |> not then
+                        toProcess.Push targetState
+
+        dfs startState
+        allStates, alphabet
 
     member this.StartState = startState
     member this.Recognize str = step (Configuration(startState, str))
@@ -106,7 +129,8 @@ type DFA<'a>(startState: State<'a>) =
     member this.ToDot(filePath: string) =
         let dot = this.ToDot()
         System.IO.File.WriteAllText(filePath, dot)
-// member this.AllStates = allStates
+
+    member this.AllStates = allStates
 // member this.FinalStates = allStates |> Seq.filter (fun x -> x.IsFinal) |> HashSet
 // member this.Alphabet = alphabet
 
@@ -187,3 +211,47 @@ module DFA =
 
     let union dfa1 dfa2 =
         complement (intersection (complement dfa1) (complement dfa2))
+
+    
+    let rec update_trans trans in_head =
+        if in_head then
+            [ Zero :: trans; One :: trans ]
+        else
+            [ trans @ [ Zero ]; trans @ [ One ] ]
+
+    let add_transitions_range (from_state: State<_>) (trans_list: bit list list) (to_state: State<_>) =
+        List.iter (fun x -> from_state.AddTransition x to_state) trans_list
+    let rec inflateTransitions (n: int) (inHead: bool) (dfa: DFA<_>) =
+        if n = 0 then dfa
+        else
+            let findByOld seqPairs (old: State<'a>) =
+                Seq.pick
+                    (fun (oldS: State<'a>, newS) ->
+                        match oldS with
+                        | oldS when oldS.Id = old.Id ->
+                            Some newS
+                        | _ -> None)
+                    seqPairs
+
+            let allStatesOld = dfa.AllStates
+            
+            let allStatesNew = HashSet()
+            for state in allStatesOld do
+                allStatesNew.Add (State<_> (state.Id + "'", state.IsStart, state.IsFinal)) |> ignore
+                
+            let allStatesZipped = Seq.zip allStatesOld allStatesNew
+
+            Seq.iter (fun (oldState: State<_>, newState: State<_>) ->
+                oldState.GetAllTransitions()
+                |> List.iter (fun (tr, st) ->
+                    add_transitions_range newState (update_trans tr inHead) (findByOld allStatesZipped st))
+                ) allStatesZipped
+
+            let startStateNew =
+                allStatesNew
+                |> Seq.pick (fun x ->
+                    match x with
+                    | x when x.IsStart -> Some x
+                    | _ -> None)
+           
+            inflateTransitions (n - 1) inHead (DFA startStateNew)

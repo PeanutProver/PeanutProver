@@ -69,15 +69,13 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 |> Map.ofList
                 |> fun map number -> Map.find number map
 
-            let dfa = FolToDFA.buildProver formula
+            let dfa = FolToDFA.buildProver formula names.Length
 
             _automata[name] <- ((formula, permutation), dfa)
         | Eval(name, args) ->
             match _automata.TryGetValue name with
             | true, f ->
-
                 let perm = f |> fst |> snd in
-
                 let args =
                     args
                     |> Option.toList
