@@ -12,6 +12,7 @@ open FolParser.LiteralParser
 open PeanutProver.DFA
 open PeanutProver.DFA.Common
 open PeanutProver.Automata
+open Ast.Common
 
 type Operation<'a, 'b> =
     | Def of string * string list option * Literal<'a, 'b>
@@ -97,6 +98,15 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                     |> List.concat
                     |> List.map Common.strToBits
                     |> List.map Seq.toList
+
+                let max_size =
+                    (0, args)
+                    ||> List.fold (fun acc next -> if acc < next.Length then next.Length else acc)
+
+                let args =
+                    args
+                    |> List.map (fun el -> [ List.init (max_size - el.Length) (fun _ -> Zero); el ] |> List.concat)
+                    |> List.map List.rev
                     |> List.transpose in
 
                 let result = dfa.Recognize(args)
