@@ -156,6 +156,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
     member this.Run() =
         async {
             PromptPlus.Setup(fun cfg -> cfg.ColorDepth <- ColorSystem.NoColors)
+            PromptPlus.IgnoreColorTokens <- true
 
             PromptPlus.DoubleDash "Welcome to Peanut Prover.\nFor help type `help`."
 
