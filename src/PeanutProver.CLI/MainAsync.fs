@@ -69,7 +69,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                 |> Map.ofList
                 |> fun map number -> Map.find number map
 
-            let dfa = FolToDFA.buildProver formula
+            let dfa, automation_vars = FolToDFA.buildProver formula
 
             _automata[name] <- ((formula, permutation), dfa)
         | Eval(name, args) ->
