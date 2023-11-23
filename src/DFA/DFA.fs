@@ -222,18 +222,18 @@ module DFA =
     let add_transitions_range (from_state: State<_>) (trans_list: bit list list) (to_state: State<_>) =
         List.iter (fun x -> from_state.AddTransition x to_state) trans_list
 
+    let findByOld seqPairs (old: State<'a>) =
+        Seq.pick
+            (fun (oldS: State<'a>, newS) ->
+                match oldS with
+                | oldS when oldS.Id = old.Id -> Some newS
+                | _ -> None)
+            seqPairs
+
     let rec inflateTransitions (n: int) (inHead: bool) (dfa: DFA<_>) =
-        if n = 0 then
+        if n <= 0 then
             dfa
         else
-            let findByOld seqPairs (old: State<'a>) =
-                Seq.pick
-                    (fun (oldS: State<'a>, newS) ->
-                        match oldS with
-                        | oldS when oldS.Id = old.Id -> Some newS
-                        | _ -> None)
-                    seqPairs
-
             let allStatesOld = dfa.AllStates
 
             let allStatesNew = HashSet()
@@ -259,3 +259,43 @@ module DFA =
                     | _ -> None)
 
             inflateTransitions (n - 1) inHead (DFA startStateNew)
+
+    let permDfa (dfa: DFA<_>) perm =
+
+        let permute ((oldState: State<_>, transitions: (bit list * State<_>) list)) =
+            oldState,
+            List.map
+                (fun (tr: bit list, st: State<_>) -> (List.permute (fun t -> (List.item t perm)) tr, st))
+                transitions
+
+
+        let oldStates = dfa.AllStates
+        let newStates = HashSet()
+
+        for oldState in oldStates do
+            newStates.Add(State<_>(oldState.Id, oldState.IsStart, oldState.IsFinal))
+            |> ignore
+
+        let zippedStates = Seq.zip oldStates newStates
+
+        let permutedTransitions =
+            Seq.map (fun state -> permute (state, state.GetAllTransitions())) oldStates
+
+        permutedTransitions
+        |> Seq.iter (fun (fromOldState, transitions) ->
+            let fromNewState = (findByOld zippedStates fromOldState)
+
+            List.iter
+                (fun (trans, toOldState) ->
+                    let toNewState = (findByOld zippedStates toOldState)
+                    fromNewState.AddTransition trans toNewState)
+                transitions)
+
+        let startStateNew =
+            newStates
+            |> Seq.pick (fun x ->
+                match x with
+                | x when x.IsStart -> Some x
+                | _ -> None)
+
+        DFA startStateNew

@@ -1,8 +1,28 @@
 ﻿module PeanutProver.DFA.FolToDFA
 
+open Ast
 open Ast.Ast
 open PeanutProver.Automata
 open PeanutProver.DFA
+
+let get_local_names formula = Passes.grab_names formula |> List.rev
+
+let inflate_and_permute_by_formula (dfa: DFA<_>) formula number_of_vars =
+    let dfa_vars_number =
+        dfa.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+
+    let inflated_dfa =
+        DFA.inflateTransitions (number_of_vars - dfa_vars_number) false dfa
+
+    let local_perm = get_local_names formula |> List.map Ident.id_fst
+
+    let remains_perm =
+        List.init (number_of_vars - local_perm.Length) (fun index -> index + local_perm.Length)
+        |> List.map (fun element ->
+            List.tryFindIndex (fun x -> x = element) local_perm
+            |> Option.defaultValue element)
+
+    (DFA.permDfa inflated_dfa (local_perm @ remains_perm))
 
 let convertAtom atom =
     match atom with
@@ -21,36 +41,24 @@ let convertAtom atom =
 
     | e -> failwithf $"Unsupported atom {e}"
 
-let rec buildProver ast numberOfVars =
+let rec buildProver ast number_of_vars =
     match ast with
     | BareAtom a -> convertAtom a
     | Or(left, right) ->
-        let dfa_left = buildProver left numberOfVars
-        let dfa_right = buildProver right numberOfVars
-
-        let dfa_left_vars_number =
-            dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
-
-        let dfa_right_vars_number =
-            dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+        let dfa_left = buildProver left number_of_vars
+        let dfa_right = buildProver right number_of_vars
 
         DFA.union
-            (DFA.inflateTransitions (numberOfVars - dfa_left_vars_number) false dfa_left)
-            (DFA.inflateTransitions (numberOfVars - dfa_right_vars_number) true dfa_right)
+            (inflate_and_permute_by_formula dfa_left left number_of_vars)
+            (inflate_and_permute_by_formula dfa_right right number_of_vars)
     | And(left, right) ->
-        let dfa_left = buildProver left numberOfVars
-        let dfa_right = buildProver right numberOfVars
-
-        let dfa_left_vars_number =
-            dfa_left.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
-
-        let dfa_right_vars_number =
-            dfa_right.StartState.GetAllTransitions() |> List.item 0 |> fst |> List.length
+        let dfa_left = buildProver left number_of_vars
+        let dfa_right = buildProver right number_of_vars
 
         DFA.intersection
-            (DFA.inflateTransitions (numberOfVars - dfa_left_vars_number) false dfa_left)
-            (DFA.inflateTransitions (numberOfVars - dfa_right_vars_number) true dfa_right)
+            (inflate_and_permute_by_formula dfa_left left number_of_vars)
+            (inflate_and_permute_by_formula dfa_right right number_of_vars)
     | Not expr ->
-        let dfa_expr = buildProver expr numberOfVars
+        let dfa_expr = buildProver expr number_of_vars
         DFA.complement dfa_expr
     | e -> failwithf $"Unsupported literal {e}."
