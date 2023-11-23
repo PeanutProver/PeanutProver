@@ -49,7 +49,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
               strWs "quit" >>% Quit
               strWs "dot" >>. identifier |>> Dot ]
 
-    let generateZeroes n = Seq.init n (fun _ -> '0')
+    let generateZeroes n = Seq.init n (fun _ -> Common.Zero)
 
     let doOp =
         function
@@ -76,17 +76,27 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             | true, f ->
                 let perm = f |> fst |> snd in
 
-                let args =
+                let lsbStrings =
                     args
                     |> Option.toList
-                    |> List.concat
-                    |> List.map Common.strToBits
-                    |> List.map Seq.toList
-                    |> List.permute perm
-                    |> List.transpose in
+                    |> Seq.concat
+                    |> Seq.map Common.strToBits
+                    |> Seq.map Seq.rev
+
+                let longestValue = Seq.maxBy Seq.length lsbStrings |> Seq.length
+
+                let automatonInput =
+                    lsbStrings
+                    |> Seq.map (fun x ->
+                        let zeroCount = longestValue - Seq.length x
+                        Seq.append x (generateZeroes zeroCount))
+                    |> Seq.permute perm
+                    |> Seq.transpose
+                    |> Seq.map Seq.toList
+                    |> Seq.toList
 
                 let dfa = snd f in
-                let result = dfa.Recognize(args)
+                let result = dfa.Recognize(automatonInput)
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
         | Show name ->
