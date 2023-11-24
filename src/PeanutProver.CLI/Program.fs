@@ -1,6 +1,5 @@
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
-open PPlus
 open PeanutProver.CLI
 open System
 

@@ -1,7 +1,6 @@
 module PeanutProver.DFA.Common
 
 open Ast.Common
-open PeanutProver.Automata
 
 let renumber_transitions (old_transitions: Map<_, Map<_, _>>) total_variables automation_indices =
     let rec selfProduct sequence number =

@@ -76,4 +76,11 @@ let rec buildProver ast =
     | Not expr ->
         let dfa_expr, vars = buildProver expr
         DFA.complement dfa_expr, vars
+    | Exists(names, expr) ->
+        let dfa, vars = buildProver expr
+
+        let indices = List.map (fun var -> List.findIndex ((=) var) vars) names
+        let dfa = DFA.projection dfa indices
+        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars 
+        dfa, vars
     | e -> failwithf $"Unsupported literal {e}."
