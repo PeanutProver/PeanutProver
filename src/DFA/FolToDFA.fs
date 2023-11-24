@@ -16,11 +16,16 @@ let inflate_and_permute_by_formula (dfa: DFA<_>) formula number_of_vars =
 
     let local_perm = get_local_names formula |> List.map Ident.id_fst
 
+    let rec find_place element =
+        let index = List.tryFindIndex (fun x -> x = element) local_perm
+
+        match index with
+        | None -> element
+        | Some index -> find_place index
+
     let remains_perm =
         List.init (number_of_vars - local_perm.Length) (fun index -> index + local_perm.Length)
-        |> List.map (fun element ->
-            List.tryFindIndex (fun x -> x = element) local_perm
-            |> Option.defaultValue element)
+        |> List.map find_place
 
     (DFA.permDfa inflated_dfa (local_perm @ remains_perm))
 
