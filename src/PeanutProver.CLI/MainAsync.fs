@@ -66,30 +66,17 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             let startScope = vars |> (Ident.start ()).Enter in
 
             let formula = Passes.assignId startScope formula in
-            
-            
-            let names = Passes.grab_names formula |> List.rev
-            let global_names = List.map (startScope.Look) vars
-
-            let permutation =
-                List.mapi (fun index name -> index, List.findIndex ((=) name) names) global_names
-                |> Map.ofList
-                |> fun map number -> Map.find number map
 
             let get_name (Id(_, name)) = name
 
             let dfa, automation_vars = FolToDFA.buildProver formula
-            
 
             let automation_indices =
                 automation_vars
                 |> List.map (fun i -> List.findIndex (fun var_name -> get_name i = var_name) vars)
 
-
-            
             let new_transitions =
                 renumber_transitions dfa.Transitions vars.Length automation_indices
-                
 
             let dfa = DFA(dfa.StartState, dfa.FinalStates, new_transitions)
 

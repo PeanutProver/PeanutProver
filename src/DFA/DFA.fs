@@ -9,7 +9,7 @@ type Result =
     | Partial of bit list list
     | Fail of State seq
 
-type DFA(startStates, finalStates: _ seq, transitions) =
+type DFA(startState, finalStates: _ seq, transitions) =
     let rec recognize input states =
         match input with
         | [] ->
@@ -26,21 +26,21 @@ type DFA(startStates, finalStates: _ seq, transitions) =
                 |> List.toSeq
                 |> Seq.concat in
 
-            states |> Seq.map (find) |> Seq.concat |> recognize tl
+            states |> Seq.map (find) |> Seq.concat |> Seq.distinct |> recognize tl
 
-    member this.StartState = startStates
+    member this.StartState = startState
     member this.FinalStates = finalStates
     member this.Transitions = transitions
 
     member this.Recognize input =
-        recognize input <| Seq.singleton startStates
+        recognize input <| Seq.singleton startState
 
     member this.ToDot() =
         let nodes = ResizeArray<_>()
         let edges = ResizeArray<_>()
 
         for (fromState, letterInfo) in Map.toSeq transitions do
-            let nodeColor = if fromState = startStates then "green" else "white"
+            let nodeColor = if fromState = startState then "green" else "white"
 
             let nodeShape =
                 if Seq.contains fromState finalStates then
@@ -52,8 +52,8 @@ type DFA(startStates, finalStates: _ seq, transitions) =
                 $"{fromState.Id} [fillcolor={nodeColor} shape={nodeShape} style=filled label=\"{fromState.Name}\"]"
             )
 
-            for (letter, toState) in Map.toSeq letterInfo do
-                edges.Add($"{fromState.Id} -> %A{toState} [label=\"%A{letter}\"]")
+            for (letter, toStates) in Map.toSeq letterInfo do
+                edges.Add($"{fromState.Id} -> %A{toStates |> Seq.distinct} [label=\"%A{letter}\"]")
 
         seq {
             "digraph g {"
@@ -110,29 +110,25 @@ module DFA =
         complement (intersection (complement dfa1) (complement dfa2))
 
     let removeManyAt ids ls =
-        let rec remove count = function
-            | hd :: tl ->
-                if List.exists ((=) count) ids then
-                    remove (count + 1) tl
-                else hd :: remove (count + 1) tl
-            | [] -> []
-        remove 0 ls
-        |> List.rev
-        
+        ls
+        |> List.indexed
+        |> List.filter (fun (idx, _) -> not <| List.exists ((=) idx) ids)
+        |> List.map snd
+
     let projection (dfa: DFA) vars =
         dfa.Transitions
         |> Map.toSeq
         |> Seq.map (fun (key, value) ->
             value
             |> Map.toSeq
-            |> Seq.fold (fun acc (bitV, states) ->
-                let newBit = removeManyAt vars bitV
-                Map.tryFind newBit acc
-                |> (function
-                    | None -> Map.add newBit states acc 
-                    | Some accStates -> Map.add newBit (Seq.append accStates states) acc) 
-                ) Map.empty
-            |> fun newMap -> key, newMap
-            )
+            |> Seq.fold
+                (fun acc (bitV, states) ->
+                    let newBit = removeManyAt vars bitV
+
+                    Map.tryFind newBit acc
+                    |> (function
+                    | None -> Map.add newBit states acc
+                    | Some accStates -> Map.add newBit (Seq.append accStates states) acc))
+                Map.empty
+            |> fun newMap -> key, newMap)
         |> fun x -> DFA(dfa.StartState, dfa.FinalStates, Map.ofSeq x)
-  

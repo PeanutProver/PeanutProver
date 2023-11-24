@@ -35,6 +35,13 @@ let convertAtom atom =
         | e -> failwithf $"Unsupported term {e}"
     | e -> failwithf $"Unsupported atom {e}"
 
+let removeRepetitions (dfa: DFA) vars =
+    let new_vars = vars |> Seq.distinct |> List.ofSeq
+    let var_number = new_vars.Length
+    let indices = List.map (fun var -> List.findIndex ((=) var) new_vars) vars
+    let new_transitions = renumber_transitions dfa.Transitions var_number indices
+    DFA(dfa.StartState, dfa.FinalStates, new_transitions), new_vars
+
 let makeCompatible transitions1 vars1 transitions2 vars2 =
     let new_vars = [ vars1; vars2 ] |> List.concat |> Seq.distinct |> List.ofSeq
     let var_number = new_vars.Length
@@ -46,7 +53,7 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
 
 let rec buildProver ast =
     match ast with
-    | BareAtom a -> convertAtom a
+    | BareAtom a -> convertAtom a ||> removeRepetitions
     | Or(left, right) ->
         let dfa_left, left_vars = buildProver left
         let dfa_right, right_vars = buildProver right
@@ -74,13 +81,12 @@ let rec buildProver ast =
 
         DFA.intersection new_dfa_left new_dfa_right, new_vars
     | Not expr ->
-        let dfa_expr, vars = buildProver expr
-        DFA.complement dfa_expr, vars
+        let dfa, vars = buildProver expr
+        DFA.complement dfa, vars
     | Exists(names, expr) ->
         let dfa, vars = buildProver expr
-
-        let indices = List.map (fun var -> List.findIndex ((=) var) vars) names
-        let dfa = DFA.projection dfa indices
-        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars 
+        let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
+        let dfa = DFA.projection dfa indices_to_squash
+        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
         dfa, vars
     | e -> failwithf $"Unsupported literal {e}."
