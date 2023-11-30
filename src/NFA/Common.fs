@@ -1,4 +1,4 @@
-module PeanutProver.DFA.Common
+module PeanutProver.NFA.Common
 
 open Ast.Common
 

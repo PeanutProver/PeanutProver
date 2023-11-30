@@ -3,14 +3,14 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <RootNamespace>DFA</RootNamespace>
+        <RootNamespace>NFA</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="DFA.fs"/>
+        <Compile Include="NFA.fs"/>
         <Compile Include="Common.fs"/>
         <Compile Include="PredefinedAutomata.fs"/>
-        <Compile Include="FolToDFA.fs"/>
+        <Compile Include="FolToNFA.fs"/>
     </ItemGroup>
 
     <ItemGroup>

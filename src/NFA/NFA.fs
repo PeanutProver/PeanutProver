@@ -9,7 +9,7 @@ type Result =
     | Partial of bit list list
     | Fail of State seq
 
-type DFA(startState, finalStates: _ seq, transitions) =
+type NFA(startState, finalStates: _ seq, transitions) =
     let rec recognize input states =
         match input with
         | [] ->
@@ -67,19 +67,19 @@ type DFA(startState, finalStates: _ seq, transitions) =
         let dot = this.ToDot()
         System.IO.File.WriteAllText(filePath, dot)
 
-module DFA =
-    let complement (dfa: DFA) =
-        DFA(
-            dfa.StartState,
-            dfa.Transitions
+module NFA =
+    let complement (nfa: NFA) =
+        NFA(
+            nfa.StartState,
+            nfa.Transitions
             |> Seq.map (fun node -> node.Key)
-            |> Seq.filter (not << (fun x -> Seq.contains x dfa.FinalStates))
+            |> Seq.filter (not << (fun x -> Seq.contains x nfa.FinalStates))
             |> Set.ofSeq,
-            dfa.Transitions
+            nfa.Transitions
         )
 
-    let intersection (dfa1: DFA) (dfa2: DFA) =
-        let stateNumber2 = dfa2.Transitions.Count
+    let intersection (nfa1: NFA) (nfa2: NFA) =
+        let stateNumber2 = nfa2.Transitions.Count
 
         let makeNewState (state1, state2) =
             { Name = $"{state1.Name}_{state2.Name}"
@@ -88,10 +88,10 @@ module DFA =
         let makeNewStates (fst, snd) =
             Seq.allPairs fst snd |> Seq.map makeNewState
 
-        let startState = makeNewState (dfa1.StartState, dfa2.StartState)
+        let startState = makeNewState (nfa1.StartState, nfa2.StartState)
 
         let transitions =
-            Seq.allPairs dfa1.Transitions dfa2.Transitions
+            Seq.allPairs nfa1.Transitions nfa2.Transitions
             |> Seq.map (fun (first, second) ->
                 (makeNewState (first.Key, second.Key),
                  first.Value
@@ -100,14 +100,14 @@ module DFA =
             |> Map.ofSeq
 
         let finalStates =
-            Seq.allPairs dfa1.FinalStates dfa2.FinalStates
+            Seq.allPairs nfa1.FinalStates nfa2.FinalStates
             |> Seq.map makeNewState
             |> Set.ofSeq
 
-        DFA(startState, finalStates, transitions)
+        NFA(startState, finalStates, transitions)
 
-    let union (dfa1: DFA) (dfa2: DFA) =
-        complement (intersection (complement dfa1) (complement dfa2))
+    let union (nfa1: NFA) (nfa2: NFA) =
+        complement (intersection (complement nfa1) (complement nfa2))
 
     let removeManyAt ids ls =
         ls
@@ -115,8 +115,8 @@ module DFA =
         |> List.filter (fun (idx, _) -> not <| List.exists ((=) idx) ids)
         |> List.map snd
 
-    let projection (dfa: DFA) vars =
-        dfa.Transitions
+    let projection (nfa: NFA) vars =
+        nfa.Transitions
         |> Map.toSeq
         |> Seq.map (fun (key, value) ->
             value
@@ -131,4 +131,4 @@ module DFA =
                     | Some accStates -> Map.add newBit (Seq.append accStates states) acc))
                 Map.empty
             |> fun newMap -> key, newMap)
-        |> fun x -> DFA(dfa.StartState, dfa.FinalStates, Map.ofSeq x)
+        |> fun x -> NFA(nfa.StartState, nfa.FinalStates, Map.ofSeq x)

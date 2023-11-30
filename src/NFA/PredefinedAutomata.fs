@@ -1,11 +1,11 @@
-﻿module PeanutProver.DFA.PredefinedAutomata
+﻿module PeanutProver.NFA.PredefinedAutomata
 
 open PeanutProver.Automata
 open Ast.Common
 
 let set = Seq.singleton
 
-let dfa_eq =
+let nfa_eq =
     let startState = { Name = "eq:Start"; Id = 0 }
     let failedState = { Name = "eq:Failed"; Id = 1 }
     let finalStates = set startState
@@ -25,9 +25,9 @@ let dfa_eq =
                     [ One; Zero ], set failedState
                     [ Zero; One ], set failedState ] ]
 
-    DFA(startState, finalStates, transitions)
+    NFA(startState, finalStates, transitions)
 
-let dfa_less =
+let nfa_less =
     let startState = { Name = "less:Start"; Id = 0 }
     let lessState = { Name = "less:Less"; Id = 1 }
     let finalStates = set lessState
@@ -47,9 +47,44 @@ let dfa_less =
                     [ One; Zero ], set startState
                     [ Zero; One ], set lessState ] ]
 
-    DFA(startState, finalStates, transitions)
+    NFA(startState, finalStates, transitions)
 
-let dfa_sum =
+type TreeNode =
+    | Node of TreeNode * TreeNode
+    | Leaf of int seq array
+
+let nfa_sum =
+    let state_names = [| "noCarry"; "carry"; "fail" |]
+    let no_carry = 0
+    let carry = 1
+    let fail = 2
+    let startState = no_carry
+    let finalStates = set no_carry
+
+    let transitions =
+        Node(
+            Node(
+                Node(
+                    Leaf([| set no_carry; set fail; set fail |] (*0;0;0*) ),
+                    Leaf([| set fail; set no_carry; set fail |] (*0;0;1*) )
+                ),
+                Node(
+                    Leaf([| set fail; set carry; set fail |] (*0;1;0*) ),
+                    Leaf([| set no_carry; set fail; set fail |] (*0;1;1*) )
+                )
+            ),
+            Node(
+                Node(
+                    Leaf([| set fail; set carry; set fail |] (*1;0;0*) ),
+                    Leaf([| set no_carry; set fail; set fail |] (*1;0;1*) )
+                ),
+                Node(
+                    Leaf([| set carry; set fail; set fail |] (*1;1;0*) ),
+                    Leaf([| set fail; set carry; set fail |] (*1;1;1*) )
+                )
+            )
+        )
+
     let noCarry = { Name = "sum:noCarry"; Id = 0 }
     let carry = { Name = "sum:carry"; Id = 1 }
     let fail = { Name = "sum:fail"; Id = 2 }
@@ -88,13 +123,13 @@ let dfa_sum =
                     [ One; One; Zero ], set fail
                     [ One; One; One ], set fail ] ]
 
-    DFA(noCarry, finalStates, transitions)
+    NFA(noCarry, finalStates, transitions)
 
-let dfa_not_eq = DFA.complement dfa_eq
+let nfa_not_eq = NFA.complement nfa_eq
 
-let dfa_less_eq = DFA.union dfa_eq dfa_less
+let nfa_less_eq = NFA.union nfa_eq nfa_less
 
-let dfa_bitwise_minimum =
+let nfa_bitwise_minimum =
     let start = { Name = "bm:start"; Id = 0 }
     let fail = { Name = "bm:fail"; Id = 1 }
     let finalStates = set start
@@ -120,4 +155,4 @@ let dfa_bitwise_minimum =
                   [ One; One; Zero ], set fail
                   [ One; One; One ], set fail] ]
 
-    DFA(start, finalStates, transitions)
+    NFA(start, finalStates, transitions)
