@@ -9,8 +9,8 @@ open PPlus
 open FParsec
 open FolParser.CommonParsers
 open FolParser.LiteralParser
-open PeanutProver.DFA
-open PeanutProver.DFA.Common
+open PeanutProver.NFA
+open PeanutProver.NFA.Common
 open PeanutProver.Automata
 open Ast.Common
 
@@ -58,7 +58,6 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
     let doOp =
         function
         | Def(name, vars, formula) ->
-            // TODO: Cross check bound vars if we use DFA
             // TODO: Should we catch exceptions here at all?
             let vars = vars |> Option.toList |> List.concat in
             // let distinct = vars |> Seq.distinct |> Seq.length in
@@ -69,21 +68,21 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 
             let get_name (Id(_, name)) = name
 
-            let dfa, automation_vars = FolToDFA.buildProver formula
+            let nfa, automation_vars = FolToNFA.buildProver formula
 
             let automation_indices =
                 automation_vars
                 |> List.map (fun i -> List.findIndex (fun var_name -> get_name i = var_name) vars)
 
             let new_transitions =
-                renumber_transitions dfa.Transitions vars.Length automation_indices
+                renumber_transitions nfa.Transitions vars.Length automation_indices
 
-            let dfa = DFA(dfa.StartState, dfa.FinalStates, new_transitions)
+            let nfa = NFA(nfa.StartState, nfa.FinalStates, new_transitions)
 
-            _automata[name] <- (formula, dfa)
+            _automata[name] <- (formula, nfa)
         | Eval(name, args) ->
             match _automata.TryGetValue name with
-            | true, (_, dfa) ->
+            | true, (_, nfa) ->
 
                 let args =
                     args
@@ -102,7 +101,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                     |> List.map List.rev
                     |> List.transpose in
 
-                let result = dfa.Recognize(args)
+                let result = nfa.Recognize(args)
                 PromptPlus.WriteLine $"Result of {name}: {result}" |> ignore
             | false, _ -> PromptPlus.WriteLine $"Automaton with name \"{name}\" doesn't exists!" |> ignore
         | Show name ->
