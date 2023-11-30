@@ -106,7 +106,36 @@ module NFA =
         NFA(startState, finalStates, transitions)
 
     let union (nfa1: NFA) (nfa2: NFA) =
-        complement (intersection (complement nfa1) (complement nfa2))
+        let states1 = nfa1.Transitions |> Seq.map (fun node -> node.Key)
+        let states2 = nfa2.Transitions |> Seq.map (fun node -> node.Key)
+        let stateNumber2 = nfa2.Transitions.Count
+
+        let makeNewState (state1, state2) =
+            { Name = $"{state1.Name}_{state2.Name}"
+              Id = state1.Id * stateNumber2 + state2.Id }
+
+        let makeNewStates (fst, snd) =
+            Seq.allPairs fst snd |> Seq.map makeNewState
+
+        let startState = makeNewState (nfa1.StartState, nfa2.StartState)
+
+        let transitions =
+            Seq.allPairs nfa1.Transitions nfa2.Transitions
+            |> Seq.map (fun (first, second) ->
+                (makeNewState (first.Key, second.Key),
+                 first.Value
+                 |> Seq.map (fun node -> (node.Key, makeNewStates (node.Value, second.Value[node.Key])))
+                 |> Map.ofSeq))
+            |> Map.ofSeq
+
+        let finalStates =
+
+            [ Seq.allPairs states1 nfa2.FinalStates; Seq.allPairs nfa1.FinalStates states2 ]
+            |> Seq.concat
+            |> Seq.map makeNewState
+            |> Set.ofSeq
+
+        NFA(startState, finalStates, transitions)
 
     let removeManyAt ids ls =
         ls
