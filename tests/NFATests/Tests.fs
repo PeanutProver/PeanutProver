@@ -10,7 +10,6 @@ let NfaResultToBool result =
     match result with
     | Accept _ -> true
     | Fail _ -> false
-    | Partial _ -> false
 
 [<Fact>]
 let ``NFA Not Equal`` () =
