@@ -52,7 +52,8 @@ type NFA(startState, finalStates: _ seq, transitions) =
             )
 
             for (letter, toStates) in Map.toSeq letterInfo do
-                edges.Add($"{fromState.Id} -> %A{toStates |> Seq.distinct} [label=\"%A{letter}\"]")
+                for toState in toStates do
+                    edges.Add($"{fromState.Id} -> %A{toState.Id} [label=\"%A{letter}\"]")
 
         seq {
             "digraph g {"
