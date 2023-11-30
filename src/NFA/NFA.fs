@@ -6,7 +6,6 @@ type State = { Name: string; Id: int }
 
 type Result =
     | Accept
-    | Partial of bit list list
     | Fail of State seq
 
 type NFA(startState, finalStates: _ seq, transitions) =
