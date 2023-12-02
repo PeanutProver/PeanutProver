@@ -53,7 +53,7 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
 
 let rec buildProver ast =
     match ast with
-    | BareAtom a -> convertAtom a ||> removeRepetitions
+    | BareAtom a -> convertAtom a ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
     | Or(left, right) ->
         let nfa_left, left_vars = buildProver left
         let nfa_right, right_vars = buildProver right
@@ -66,7 +66,7 @@ let rec buildProver ast =
         let new_nfa_right =
             NFA(nfa_right.StartState, nfa_right.FinalStates, transitions_right)
 
-        NFA.union new_nfa_left new_nfa_right, new_vars
+        NFA.union new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | And(left, right) ->
         let nfa_left, left_vars = buildProver left
         let nfa_right, right_vars = buildProver right
@@ -79,14 +79,14 @@ let rec buildProver ast =
         let new_nfa_right =
             NFA(nfa_right.StartState, nfa_right.FinalStates, transitions_right)
 
-        NFA.intersection new_nfa_left new_nfa_right, new_vars
+        NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr
-        NFA.complement nfa, vars
+        NFA.complement nfa |> NFA.minimization, vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa, vars
+        nfa |> NFA.minimization, vars
     | e -> failwithf $"Unsupported literal {e}."

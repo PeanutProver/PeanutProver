@@ -1,5 +1,6 @@
 ﻿namespace PeanutProver.Automata
 
+open System.Collections.Generic
 open Ast.Common
 
 type State = { Name: string; Id: int }
@@ -66,6 +67,36 @@ type NFA(startState, finalStates: _ seq, transitions) =
     member this.ToDot(filePath: string) =
         let dot = this.ToDot()
         System.IO.File.WriteAllText(filePath, dot)
+
+    member this.Alphabet =
+        transitions |> Map.values |> Seq.map Map.keys |> Seq.concat |> Seq.distinct
+
+    member this.AllStates =
+        transitions
+        |> Map.fold
+            (fun set key value ->
+                value
+                |> Map.values
+                |> Seq.fold (fun set states -> states |> Set.ofSeq |> Set.union set) Set.empty
+                |> Set.union (Set.singleton key)
+                |> Set.union set)
+            Set.empty
+
+    member this.Reachable(state: State) =
+        let rec dfs (state: State) marked =
+            if Set.contains state marked then
+                marked
+            else
+                let marked = Set.add state marked
+
+                transitions
+                |> Map.find state
+                |> Map.values
+                |> Seq.concat
+                |> Set.ofSeq
+                |> Set.fold (fun acc x -> acc |> Set.union (dfs x marked)) (Set.singleton state)
+
+        dfs state Set.empty
 
 module NFA =
     let complement (nfa: NFA) =
@@ -161,3 +192,125 @@ module NFA =
                 Map.empty
             |> fun newMap -> key, newMap)
         |> fun x -> NFA(nfa.StartState, nfa.FinalStates, Map.ofSeq x)
+
+    let isDfa (fa: NFA) =
+        fa.Transitions
+        |> Map.forall (fun _ value ->
+            value
+            |> Map.values
+            |> Seq.forall (fun transitions -> transitions |> Seq.length = 1))
+
+    let minimization (nfa: NFA) =
+        if isDfa nfa then
+            let alphabet = nfa.Alphabet
+            let allTransitions = nfa.Transitions
+            let allStates = nfa.AllStates |> Set
+            let finalStates = nfa.FinalStates |> Set
+
+            let unionStatesToOne (states: Set<State>) =
+                let name, id =
+                    states |> Seq.fold (fun acc x -> (fst acc + x.Name, snd acc + x.Id)) ("", 0)
+
+                { Name = name; Id = id }
+
+            let reverseEdges (bitList: bit list) (state: State) =
+                allTransitions
+                |> Map.filter (fun _ trans ->
+                    trans
+                    |> Map.exists (fun vector statesTo -> vector = bitList && statesTo |> Seq.exists state.Equals))
+                |> Map.keys
+                |> Set
+
+            let splitters = Queue<Set<State> * bit list>()
+
+            let equivalenceClassesStart =
+                Set.ofList [ finalStates; Set.difference allStates finalStates ]
+
+            for cl in equivalenceClassesStart do
+                alphabet |> Seq.iter (fun symbol -> splitters.Enqueue(cl, symbol))
+
+            let rec iterateOverQueue (splitters: Queue<Set<State> * bit list>) (equivalenceClasses: Set<Set<State>>) =
+                if splitters.Count = 0 then
+                    equivalenceClasses
+                else
+                    let (splitter: Set<State>, symbol: bit list) = splitters.Dequeue()
+
+                    equivalenceClasses
+                    |> Seq.fold
+                        (fun acc eqClass ->
+                            let tempEqClasses = equivalenceClasses |> Set.filter (eqClass.Equals >> not)
+
+                            let r1 =
+                                splitter
+                                |> Set.map (reverseEdges symbol)
+                                |> Set.unionMany
+                                |> Set.intersect eqClass
+
+                            let r2 = Set.difference eqClass r1
+
+                            if r1.Count <> 0 && r2.Count <> 0 then
+                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
+                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
+
+                                acc |> Set.intersect tempEqClasses |> Set.add r1 |> Set.add r2
+                            else
+                                acc)
+                        (equivalenceClasses)
+                    |> iterateOverQueue splitters
+
+            let equivalenceClasses = iterateOverQueue splitters equivalenceClassesStart
+
+            let findEqClassByState state =
+                equivalenceClasses |> Set.filter (Set.contains state) |> Set.toList |> List.head
+
+            let eqClassState =
+                equivalenceClasses |> Seq.map (fun cl -> cl, unionStatesToOne cl) |> Map.ofSeq
+
+            let unionStatesWithTrans
+                (state1: State, trans1: (bit list * State seq) seq)
+                (_, trans2: (bit list * State seq) seq)
+                =
+                let commonTr = Seq.append trans2 trans1 |> Seq.distinct
+                state1, commonTr
+
+            let newFinalStates =
+                nfa.FinalStates
+                |> Seq.map (fun state -> eqClassState |> Map.find (state |> findEqClassByState))
+
+            let newStartState = eqClassState |> Map.find (nfa.StartState |> findEqClassByState)
+
+
+            let newTransitionsTemp =
+                allTransitions
+                |> Map.toSeq
+                |> Seq.map (fun (stateFrom, tr) ->
+                    eqClassState |> Map.find (findEqClassByState stateFrom),
+                    tr
+                    |> Map.toSeq
+                    |> Seq.map (fun (symbol, statesTo) ->
+                        symbol,
+                        statesTo
+                        |> Seq.map (fun stateTo -> eqClassState |> Map.find (findEqClassByState stateTo))))
+
+            let newTransitions =
+                newTransitionsTemp
+                |> Seq.map fst
+                |> Seq.distinct
+                |> Seq.map (fun state ->
+                    newTransitionsTemp
+                    |> Seq.filter (fun (s, _) -> state = s)
+                    |> Seq.reduce unionStatesWithTrans)
+                |> Seq.map (fun (s, t) -> s, Seq.toList t |> Map.ofList)
+                |> Map.ofSeq
+
+
+            let resultNfa = NFA(newStartState, newFinalStates, newTransitions)
+
+            let transitionsFromStart =
+                Map.filter
+                    (fun stateFrom _ -> Set.contains stateFrom (resultNfa.StartState |> resultNfa.Reachable))
+                    newTransitions
+
+            NFA(newStartState, newFinalStates, transitionsFromStart)
+        else
+            nfa
