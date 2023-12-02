@@ -1,11 +1,13 @@
 ﻿module PeanutProver.NFA.FolToNFA
 
+open System.Collections.Generic
 open Ast.Ast
 open PeanutProver.Automata
 open PeanutProver.NFA.Common
 
-let convertAtom atom =
+let convertAtom atom (_automata: Dictionary<_, _>) =
     match atom with
+    | Formula(name, vars) -> _automata.GetValueOrDefault name |> snd, vars
     | Less(left, right) ->
         match left, right with
         | Var a, Var b -> PredefinedAutomata.nfa_less, [ a; b ]
@@ -56,13 +58,12 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
     let transitions2 = renumber_transitions transitions2 var_number indices2
     transitions1, transitions2, new_vars
 
-let rec buildProver ast =
+let rec buildProver ast _automata =
     match ast with
-    | BareAtom a -> convertAtom a ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
+    | BareAtom a -> convertAtom a _automata ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
     | Or(left, right) ->
-        let nfa_left, left_vars = buildProver left
-        let nfa_right, right_vars = buildProver right
-
+        let nfa_left, left_vars = buildProver left _automata
+        let nfa_right, right_vars = buildProver right _automata
         let transitions_left, transitions_right, new_vars =
             makeCompatible nfa_left.Transitions left_vars nfa_right.Transitions right_vars
 
@@ -73,8 +74,8 @@ let rec buildProver ast =
 
         NFA.union new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | And(left, right) ->
-        let nfa_left, left_vars = buildProver left
-        let nfa_right, right_vars = buildProver right
+        let nfa_left, left_vars = buildProver left _automata
+        let nfa_right, right_vars = buildProver right _automata
 
         let transitions_left, transitions_right, new_vars =
             makeCompatible nfa_left.Transitions left_vars nfa_right.Transitions right_vars
@@ -86,10 +87,10 @@ let rec buildProver ast =
 
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
-        let nfa, vars = buildProver expr
+        let nfa, vars = buildProver expr _automata
         NFA.complement nfa |> NFA.minimization, vars
     | Exists(names, expr) ->
-        let nfa, vars = buildProver expr
+        let nfa, vars = buildProver expr _automata
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars

@@ -1,5 +1,6 @@
 module Ast.Ast
 
+
 type ('a, 'b) Term =
     | BitwiseMinimum of Term<'a, 'b> * Term<'a, 'b>
     | Plus of Term<'a, 'b> * Term<'a, 'b>
@@ -7,12 +8,14 @@ type ('a, 'b) Term =
     | Const of 'b
     | Var of 'a
 
+
 type Atom<'a, 'b> =
     | True
     | False
     | Equals of Term<'a, 'b> * Term<'a, 'b>
     | Less of Term<'a, 'b> * Term<'a, 'b>
     | Greater of Term<'a, 'b> * Term<'a, 'b>
+    | Formula of string * 'a list
 
 type Literal<'a, 'b> =
     | BareAtom of Atom<'a, 'b>

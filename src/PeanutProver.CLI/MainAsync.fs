@@ -68,7 +68,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 
             let get_name (Id(_, name)) = name
 
-            let nfa, automation_vars = FolToNFA.buildProver formula
+            let nfa, automation_vars = FolToNFA.buildProver formula _automata
 
             let automation_indices =
                 automation_vars
