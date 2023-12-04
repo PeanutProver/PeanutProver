@@ -238,7 +238,7 @@ module NFA =
                     equivalenceClasses
                     |> Seq.fold
                         (fun acc eqClass ->
-                            let tempEqClasses = equivalenceClasses |> Set.filter (eqClass.Equals >> not)
+                            let tempEqClasses = acc |> Set.filter (eqClass.Equals >> not)
 
                             let r1 =
                                 splitter
@@ -250,7 +250,7 @@ module NFA =
 
                             if r1.Count <> 0 && r2.Count <> 0 then
                                 alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
-                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
+                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r2, symbol'))
 
                                 acc |> Set.intersect tempEqClasses |> Set.add r1 |> Set.add r2
                             else
