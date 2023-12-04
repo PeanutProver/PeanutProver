@@ -13,6 +13,7 @@ open PeanutProver.NFA
 open PeanutProver.NFA.Common
 open PeanutProver.Automata
 open Ast.Common
+open Ast.Passes
 
 type Operation<'a, 'b> =
     | Def of string * string list option * Literal<'a, 'b>
@@ -64,7 +65,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             // if distinct != vars.Length then failwith "Vars must be distinct!"
             let startScope = vars |> (Ident.start ()).Enter in
 
-            let formula = Passes.assignId startScope formula in
+            let formula = Passes.assignId startScope formula |> truncateTerms in
 
             let get_name (Id(_, name)) = name
 

@@ -60,10 +60,14 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
 
 let rec buildProver ast _automata =
     match ast with
-    | BareAtom a -> convertAtom a _automata ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
+    | BareAtom a ->
+        convertAtom a _automata
+        ||> removeRepetitions
+        |> (fun (nfa, s) -> NFA.minimization nfa, s)
     | Or(left, right) ->
         let nfa_left, left_vars = buildProver left _automata
         let nfa_right, right_vars = buildProver right _automata
+
         let transitions_left, transitions_right, new_vars =
             makeCompatible nfa_left.Transitions left_vars nfa_right.Transitions right_vars
 

@@ -98,8 +98,7 @@ let grab_names =
 
     let rec atom =
         function
-        | True
-        | False -> []
+        | (True | False) -> []
         | Equals(left, right)
         | Less(left, right)
         | Greater(left, right) -> filter (term left) (term right)
@@ -115,3 +114,49 @@ let grab_names =
         | Forall(_, next) -> liter next
 
     liter
+
+
+let rec goToTerm (term: Term<id, _>) vars newVars atoms =
+    let makeEq t x y z = Equals(t (x, y), z)
+
+    match term with
+    | Var a -> [ Var a ], [], []
+    | Plus(term1, term2) ->
+        match (term1, term2) with
+        | Var a, Var b -> [ Var a; Var b ], [ Var(Id(0, "e0")) ], [ makeEq Plus (Var a) (Var b) (Var(Id(0, "e0"))) ]
+        | Plus(termP1, Var b), Var c ->
+            let vars, newVars, atoms = goToTerm (Plus(termP1, Var b)) vars newVars atoms
+            let ve = newVars |> List.last
+            let nve = Var(Id(newVars.Length, $"e{newVars.Length}"))
+            vars @ [ Var c ], newVars @ [ nve ], atoms @ [ makeEq Plus ve (Var c) nve ]
+        | _ -> vars, newVars, atoms
+    | _ -> vars, newVars, atoms
+
+let truncateTerms (literal: Literal<id, _>) =
+    match literal with
+    | BareAtom atom ->
+        match atom with
+        | Equals(term1, term2) ->
+            match term2 with
+            | Var b ->
+                match term1 with
+                | Var a -> literal
+                | _ ->
+                    let v, nv, atoms = (goToTerm term1 [] [] [])
+
+                    if nv.Length = 1 then
+                        literal
+                    else
+                        Exists(
+                            (nv
+                             |> List.map (fun x ->
+                                 let (Var e) = x
+                                 e)),
+                            List.foldBack
+                                (fun a acc -> And(BareAtom a, acc))
+                                atoms
+                                (BareAtom(Equals(List.last nv, Var b)))
+                        )
+            | _ -> literal
+        | _ -> literal
+    | _ -> literal
