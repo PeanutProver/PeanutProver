@@ -213,11 +213,25 @@ module NFA =
 
                 { Name = name; Id = id }
 
+            let reverseEdgesMap =
+                alphabet
+                |> Seq.map (fun symbol ->
+                    let map =
+                        allTransitions
+                        |> Map.map (fun stateFrom trans ->
+                            trans
+                            |> Map.filter (fun vector statesTo -> vector = symbol)
+                            |> Map.values
+                            |> Seq.concat
+                            |> Set.ofSeq)
+
+                    symbol, map)
+                |> Map.ofSeq
+
             let reverseEdges (bitList: bit list) (state: State) =
-                allTransitions
-                |> Map.filter (fun _ trans ->
-                    trans
-                    |> Map.exists (fun vector statesTo -> vector = bitList && statesTo |> Seq.exists state.Equals))
+                reverseEdgesMap
+                |> Map.find bitList
+                |> Map.filter (fun _ -> Set.contains state)
                 |> Map.keys
                 |> Set
 
@@ -249,10 +263,12 @@ module NFA =
                             let r2 = Set.difference eqClass r1
 
                             if r1.Count <> 0 && r2.Count <> 0 then
-                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
-                                alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r2, symbol'))
+                                if r1.Count < r2.Count then
+                                    alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r1, symbol'))
+                                else
+                                    alphabet |> Seq.iter (fun symbol' -> splitters.Enqueue(r2, symbol'))
 
-                                acc |> Set.intersect tempEqClasses |> Set.add r1 |> Set.add r2
+                                tempEqClasses |> Set.add r1 |> Set.add r2
                             else
                                 acc)
                         (equivalenceClasses)
@@ -305,11 +321,10 @@ module NFA =
 
 
             let resultNfa = NFA(newStartState, newFinalStates, newTransitions)
+            let reachable = resultNfa.StartState |> resultNfa.Reachable
 
             let transitionsFromStart =
-                Map.filter
-                    (fun stateFrom _ -> Set.contains stateFrom (resultNfa.StartState |> resultNfa.Reachable))
-                    newTransitions
+                Map.filter (fun stateFrom _ -> Set.contains stateFrom reachable) newTransitions
 
             NFA(newStartState, newFinalStates, transitionsFromStart)
         else
