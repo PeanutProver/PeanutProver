@@ -7,7 +7,6 @@ open PeanutProver.NFA.Common
 
 let convertAtom atom (_automata: Dictionary<_, _>) =
     match atom with
-    | Formula(name, vars) -> _automata.GetValueOrDefault name |> snd, vars
     | Less(left, right) ->
         match left, right with
         | Var a, Var b -> PredefinedAutomata.nfa_less, [ a; b ]
@@ -40,7 +39,20 @@ let convertAtom atom (_automata: Dictionary<_, _>) =
             | Var b -> PredefinedAutomata.fa_constant_eq a, [ b ]
             | e -> failwithf $"Unsupported: {e}"
         | e -> failwithf $"Unsupported term {e}"
-    | e -> failwithf $"Unsupported atom {e}"
+    | Automaton(name, terms) ->
+        match _automata.TryGetValue name with
+        | true, (_, automaton) ->
+            automaton,
+            (terms
+             |> List.map (fun t ->
+                 match t with
+                 | Var a -> a
+                 | _ -> failwithf $"Automaton {name} can only accept vars"))
+        | false, _ -> failwithf $"Automaton {name} is not found"
+
+    | True -> failwith "True is not implemented"
+    | False -> failwith "False is not implemented"
+    | Greater(term, term1) -> failwith "> is not implemented"
 
 let removeRepetitions (nfa: NFA) vars =
     let new_vars = vars |> Seq.distinct |> List.ofSeq

@@ -20,6 +20,8 @@ let assignId scope =
         | Equals(left, right) -> Equals <| (term scope left, term scope right)
         | Less(left, right) -> Less(term scope left, term scope right)
         | Greater(left, right) -> Greater(term scope left, term scope right)
+        | Automaton(name, terms) -> Automaton(name, terms |> List.map (term scope))
+
 
     let rec liter (scope: Ident.Scope) lit =
         let sameScope = liter scope in
@@ -116,23 +118,32 @@ let grab_names =
     liter
 
 
-let rec goToTerm (term: Term<id, _>) vars newVars atoms =
+let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
     let makeEq t x y z = Equals(t (x, y), z)
 
+    let genNewVar (scope: Scope) =
+        let newVarName = $"e{scope.Counter() + 1}"
+        let newScope = scope.Enter([ newVarName ])
+        Var(Id(newScope.Counter(), newVarName)), newScope
+
     match term with
-    | Var a -> [ Var a ], [], []
+    | Var a -> [ Var a ], [], [], scope
     | Plus(term1, term2) ->
         match (term1, term2) with
-        | Var a, Var b -> [ Var a; Var b ], [ Var(Id(0, "e0")) ], [ makeEq Plus (Var a) (Var b) (Var(Id(0, "e0"))) ]
+        | Var a, Var b ->
+            let (newVar, newScope) = genNewVar scope
+            [ Var a; Var b ], [ newVar ], [ makeEq Plus (Var a) (Var b) newVar ], newScope
         | Plus(termP1, Var b), Var c ->
-            let vars, newVars, atoms = goToTerm (Plus(termP1, Var b)) vars newVars atoms
-            let ve = newVars |> List.last
-            let nve = Var(Id(newVars.Length, $"e{newVars.Length}"))
-            vars @ [ Var c ], newVars @ [ nve ], atoms @ [ makeEq Plus ve (Var c) nve ]
-        | _ -> vars, newVars, atoms
-    | _ -> vars, newVars, atoms
+            let vars, newVars, atoms, scope' =
+                goToTerm scope (Plus(termP1, Var b)) vars newVars atoms
 
-let truncateTerms (literal: Literal<id, _>) =
+            let ve = newVars |> List.last
+            let nve, newScope = genNewVar scope'
+            vars @ [ Var c ], newVars @ [ nve ], atoms @ [ makeEq Plus ve (Var c) nve ], newScope
+        | _ -> vars, newVars, atoms, scope
+    | _ -> vars, newVars, atoms, scope
+
+let truncateTerms scope (literal: Literal<id, _>) =
     match literal with
     | BareAtom atom ->
         match atom with
@@ -142,7 +153,7 @@ let truncateTerms (literal: Literal<id, _>) =
                 match term1 with
                 | Var a -> literal
                 | _ ->
-                    let v, nv, atoms = (goToTerm term1 [] [] [])
+                    let v, nv, atoms, scope' = (goToTerm scope term1 [] [] [])
 
                     if nv.Length = 1 then
                         literal
@@ -157,6 +168,25 @@ let truncateTerms (literal: Literal<id, _>) =
                                 atoms
                                 (BareAtom(Equals(List.last nv, Var b)))
                         )
-            | _ -> literal
+        | Automaton(name, terms) ->
+            let vars, newVars, atoms, newVarsLast =
+                terms
+                |> List.map (fun x ->
+                    let (x, y, z, u) = goToTerm scope x [] [] []
+                    (x, y, z))
+                |> List.unzip3
+                |> fun (x, y, z) -> (List.concat x, List.concat y, List.concat z, List.last y)
+
+            if newVars.Length = 0 then
+                literal
+            else
+                Exists(
+                    (newVars
+                     |> List.map (fun x ->
+                         let (Var e) = x
+                         e)),
+                    List.foldBack (fun a acc -> And(BareAtom a, acc)) atoms (BareAtom(Automaton(name, newVarsLast)))
+                )
+
         | _ -> literal
     | _ -> literal
