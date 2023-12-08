@@ -28,7 +28,12 @@ type NFA(startState, finalStates: _ seq, transitions) =
                 |> Seq.concat in
 
             states |> Seq.map (find) |> Seq.concat |> Seq.distinct |> recognize tl
-
+    member this.CountOfBits =
+        transitions
+        |> Map.find startState
+        |> Map.keys
+        |> Seq.head
+        |> List.length
     member this.StartState = startState
     member this.FinalStates = finalStates
     member this.Transitions = transitions
@@ -338,3 +343,35 @@ module NFA =
             NFA(newStartState, newFinalStates, transitionsFromStart)
         else
             nfa
+    let quotientZero(nfa: NFA) =
+        let zeroesList = List.replicate nfa.CountOfBits Zero
+        let allStates = nfa.AllStates
+        let countOfStates = allStates |> Set.count
+        let step states =
+            states 
+            |> Set.fold (fun acc state ->
+                nfa.Transitions
+                |> Map.find state
+                |> Map.find zeroesList
+                |> Set.ofSeq
+                |> Set.union acc) Set.empty
+        let accept (state: State) =
+            let counter = 0
+            let rec anotherStep counter states =
+                if (states |> Set.intersect (Set.ofSeq nfa.FinalStates) |> Set.count) = 0 then
+                    if counter > countOfStates then
+                        false
+                    else
+                        anotherStep (counter + 1) (step states)
+                else
+                    true
+            
+            anotherStep 0 (Set.ofList [state])
+        let newFinalSates =
+            allStates
+            |> Set.fold (fun acc state ->
+                if accept state then
+                    acc |> Set.add state
+                else acc
+                ) (Set.ofSeq nfa.FinalStates)
+        NFA(nfa.StartState, newFinalSates, nfa.Transitions)
