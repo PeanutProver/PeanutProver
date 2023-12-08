@@ -129,7 +129,7 @@ let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
 
     match term with
     | Var a -> [ Var a ], [], [], scope
-    | Const a -> [Const a], [], [], scope
+    | Const a -> [ Const a ], [], [], scope
     | Plus(term1, term2) ->
         match (term1, term2) with
         | Var a, Var b ->
@@ -147,9 +147,9 @@ let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
 
 let rec truncateTerms scope (literal: Literal<id, _>) =
     match literal with
-    | Exists (vars, literal') -> Exists (vars, truncateTerms scope literal')
-    | And (expr1, expr2) -> And(truncateTerms scope expr1, truncateTerms scope expr2)
-    | Or (expr1, expr2) -> Or (truncateTerms scope expr1, truncateTerms scope expr2)
+    | Exists(vars, literal') -> Exists(vars, truncateTerms scope literal')
+    | And(expr1, expr2) -> And(truncateTerms scope expr1, truncateTerms scope expr2)
+    | Or(expr1, expr2) -> Or(truncateTerms scope expr1, truncateTerms scope expr2)
     | BareAtom atom ->
         match atom with
         | Equals(term1, term2) ->
@@ -205,6 +205,6 @@ let rec truncateTerms scope (literal: Literal<id, _>) =
                 )
 
         | _ -> literal
-    | Not literal -> Not (truncateTerms scope literal)
-    | Implies(literal, literal1) -> Implies (truncateTerms scope literal, truncateTerms scope literal1)
-    | Forall(ids, literal) -> Forall (ids, (truncateTerms scope literal))
+    | Not literal -> Not(truncateTerms scope literal)
+    | Implies(literal, literal1) -> Implies(truncateTerms scope literal, truncateTerms scope literal1)
+    | Forall(ids, literal) -> Forall(ids, (truncateTerms scope literal))

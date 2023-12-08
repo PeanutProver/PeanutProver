@@ -110,5 +110,12 @@ let rec buildProver ast _automata =
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa |> NFA.minimization, vars
+        nfa |> NFA.quotientZero, vars
+    | Forall(names, expr) ->
+        let nfa, vars = buildProver (Not expr) _automata
+        let nfa = nfa |> NFA.complement
+        let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
+        let nfa = NFA.projection nfa indices_to_squash
+        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
+        nfa |> NFA.quotientZero, vars
     | e -> failwithf $"Unsupported literal {e}."
