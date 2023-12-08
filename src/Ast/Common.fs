@@ -2,9 +2,23 @@ module Ast.Common
 
 open System
 
+[<StructuredFormatDisplay("{DisplayText}")>]
 type bit =
     | Zero
     | One
+
+    member this.DisplayText = this.ToString()
+
+    override this.ToString() =
+        match this with
+        | Zero -> "0"
+        | One -> "1"
+
+
+let revBit =
+    function
+    | Zero -> One
+    | One -> Zero
 
 
 let intToBits (x: int) =

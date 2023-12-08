@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open Ast.Common
+open Microsoft.FSharp.Collections
 
 type State = { Name: string; Id: int }
 
@@ -36,32 +37,40 @@ type NFA(startState, finalStates: _ seq, transitions) =
         recognize input <| Seq.singleton startState
 
     member this.ToDot() =
-        let nodes = ResizeArray<_>()
-        let edges = ResizeArray<_>()
+        let nodeColor state =
+            if state = startState then "green" else "white"
 
-        for (fromState, letterInfo) in Map.toSeq transitions do
-            let nodeColor = if fromState = startState then "green" else "white"
+        let nodeShape state =
+            if Seq.contains state finalStates then
+                "doublecircle"
+            else
+                "circle"
 
-            let nodeShape =
-                if Seq.contains fromState finalStates then
-                    "doublecircle"
-                else
-                    "circle"
+        let nodes = ResizeArray<string>()
+        let edges = ResizeArray<string>()
 
+        transitions
+        |> Map.iter (fun fromState letterInfo ->
             nodes.Add(
-                $"{fromState.Id} [fillcolor={nodeColor} shape={nodeShape} style=filled label=\"{fromState.Name}\"]"
+                $"{fromState.Id} [fillcolor={nodeColor fromState} shape={nodeShape fromState} style=filled label=\"{fromState.Name}\"]"
             )
 
-            for (letter, toStates) in Map.toSeq letterInfo do
-                for toState in toStates do
-                    edges.Add($"{fromState.Id} -> %A{toState.Id} [label=\"%A{letter}\"]")
+            letterInfo
+            |> Map.iter (fun letter toStates ->
+                toStates
+                |> Seq.iter (fun toState -> (edges.Add($"{fromState.Id} -> %A{toState.Id} [label=\"%A{letter}\"]")))))
+
+        nodes.Sort()
+        edges.Sort()
 
         seq {
             "digraph g {"
+            "rankdir=\"LR\""
             yield! nodes
             yield! edges
             "}"
         }
+        |> Seq.distinct
         |> String.concat "\n"
 
     member this.ToDot(filePath: string) =
