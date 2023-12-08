@@ -128,6 +128,7 @@ let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
 
     match term with
     | Var a -> [ Var a ], [], [], scope
+    | Const a -> [Const a], [], [], scope
     | Plus(term1, term2) ->
         match (term1, term2) with
         | Var a, Var b ->

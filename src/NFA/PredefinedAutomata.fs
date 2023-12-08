@@ -54,37 +54,6 @@ type TreeNode =
     | Leaf of int seq array
 
 let nfa_sum =
-    let state_names = [| "noCarry"; "carry"; "fail" |]
-    let no_carry = 0
-    let carry = 1
-    let fail = 2
-    let startState = no_carry
-    let finalStates = set no_carry
-
-    let transitions =
-        Node(
-            Node(
-                Node(
-                    Leaf([| set no_carry; set fail; set fail |] (*0;0;0*) ),
-                    Leaf([| set fail; set no_carry; set fail |] (*0;0;1*) )
-                ),
-                Node(
-                    Leaf([| set fail; set carry; set fail |] (*0;1;0*) ),
-                    Leaf([| set no_carry; set fail; set fail |] (*0;1;1*) )
-                )
-            ),
-            Node(
-                Node(
-                    Leaf([| set fail; set carry; set fail |] (*1;0;0*) ),
-                    Leaf([| set no_carry; set fail; set fail |] (*1;0;1*) )
-                ),
-                Node(
-                    Leaf([| set carry; set fail; set fail |] (*1;1;0*) ),
-                    Leaf([| set fail; set carry; set fail |] (*1;1;1*) )
-                )
-            )
-        )
-
     let noCarry = { Name = "sum:noCarry"; Id = 0 }
     let carry = { Name = "sum:carry"; Id = 1 }
     let fail = { Name = "sum:fail"; Id = 2 }
