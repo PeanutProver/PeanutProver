@@ -20,7 +20,6 @@ let revBit =
     | Zero -> One
     | One -> Zero
 
-
 let intToBits (x: int) =
     x
     |> (fun x -> Convert.ToString(x, 2))
@@ -30,3 +29,12 @@ let intToBits (x: int) =
         | _ -> failwith "Unexpected bit value")
 
 let strToBits (x: string) = x |> Convert.ToInt32 |> intToBits
+
+module List =
+    let rec powerSet =
+        function
+        | x :: tl ->
+            let tlset = powerSet tl in
+            let with_x = List.map (fun set -> x :: set) tlset in
+            with_x @ tlset
+        | [] -> [ [] ]
