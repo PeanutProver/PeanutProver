@@ -18,10 +18,9 @@ type NFA(startState, finalStates: _ seq, transitions) =
                 Fail states
         | hd :: tl ->
             let find state =
-                match Map.tryFind state transitions with
-                | Some(wordMapping: Map<bit list, State seq>) -> Map.tryFind hd wordMapping
-                | _ -> None
-                |> (Option.toList)
+                Map.tryFind state transitions
+                |> Option.bind (Map.tryFind hd)
+                |> Option.toList
                 |> List.toSeq
                 |> Seq.concat in
 
@@ -66,6 +65,37 @@ type NFA(startState, finalStates: _ seq, transitions) =
     member this.ToDot(filePath: string) =
         let dot = this.ToDot()
         System.IO.File.WriteAllText(filePath, dot)
+
+    member this.ToDFA =
+        let start = Seq.singleton startState in
+
+        let states =
+            (let keys = transitions |> Map.keys in
+
+             let values =
+                 transitions |> Map.values |> Seq.map Map.values |> Seq.concat |> Seq.concat in
+
+             Set.ofSeq keys |> Set.union (Set.ofSeq values)) in
+
+        let powerSet = List.ofSeq states |> List.powerSet |> Set.ofList
+
+        let map: (State * bit list * State seq) seq =
+            transitions
+            |> Map.map (fun _ v -> Map.toSeq v)
+            |> Map.toSeq
+            |> Seq.map (fun (st, tl) -> Seq.map (fun (bl, sts) -> st, bl, sts) tl)
+            |> Seq.concat in
+
+        let step sts =
+            let is x = List.exists ((=) x) sts in
+
+            map
+            |> Seq.filter (fun (st, _, _) -> is st)
+            |> Seq.groupBy (fun (_, bl, _) -> (bl))
+            |> Seq.map (fun ((bl), s) -> let tg = Seq.map (fun (_, _, tg) -> tg) s |> Seq.concat in (bl, tg))
+            |> fun x -> sts, x
+
+        powerSet |> Seq.map step 
 
 module NFA =
     let complement (nfa: NFA) =
