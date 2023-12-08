@@ -70,6 +70,7 @@ let substituteConstant globals values =
         | Equals(left, right) -> Equals <| (term left, term right)
         | Less(left, right) -> Less(term left, term right)
         | Greater(left, right) -> Greater(term left, term right)
+        | Automaton(name, terms) -> Automaton(name, terms |> List.map term)
 
     let rec liter =
         function
@@ -144,8 +145,11 @@ let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
         | _ -> vars, newVars, atoms, scope
     | _ -> vars, newVars, atoms, scope
 
-let truncateTerms scope (literal: Literal<id, _>) =
+let rec truncateTerms scope (literal: Literal<id, _>) =
     match literal with
+    | Exists (vars, literal') -> Exists (vars, truncateTerms scope literal')
+    | And (expr1, expr2) -> And(truncateTerms scope expr1, truncateTerms scope expr2)
+    | Or (expr1, expr2) -> Or (truncateTerms scope expr1, truncateTerms scope expr2)
     | BareAtom atom ->
         match atom with
         | Equals(term1, term2) ->
@@ -169,14 +173,22 @@ let truncateTerms scope (literal: Literal<id, _>) =
                                 atoms
                                 (BareAtom(Equals(List.last nv, Var b)))
                         )
+            | _ -> literal
         | Automaton(name, terms) ->
-            let vars, newVars, atoms, newVarsLast =
+            let newVars, atoms, usableInAutomatonVars =
                 terms
                 |> List.map (fun x ->
-                    let (x, y, z, u) = goToTerm scope x [] [] []
-                    (x, y, z))
+                    let (vars, newVars, atoms, _) = goToTerm scope x [] [] []
+
+                    (newVars,
+                     atoms,
+                     if newVars.Length = 0 then
+                         List.last vars
+                     else
+                         List.last newVars))
                 |> List.unzip3
-                |> fun (x, y, z) -> (List.concat x, List.concat y, List.concat z, List.last y)
+                |> fun (newVarsList, atomsList, usableInAutomatonVars) ->
+                    (List.concat newVarsList, List.concat atomsList, usableInAutomatonVars)
 
             if newVars.Length = 0 then
                 literal
@@ -186,8 +198,13 @@ let truncateTerms scope (literal: Literal<id, _>) =
                      |> List.map (fun x ->
                          let (Var e) = x
                          e)),
-                    List.foldBack (fun a acc -> And(BareAtom a, acc)) atoms (BareAtom(Automaton(name, newVarsLast)))
+                    List.foldBack
+                        (fun a acc -> And(BareAtom a, acc))
+                        atoms
+                        (BareAtom(Automaton(name, usableInAutomatonVars)))
                 )
 
         | _ -> literal
-    | _ -> literal
+    | Not literal -> Not (truncateTerms scope literal)
+    | Implies(literal, literal1) -> Implies (truncateTerms scope literal, truncateTerms scope literal1)
+    | Forall(ids, literal) -> Forall (ids, (truncateTerms scope literal))
