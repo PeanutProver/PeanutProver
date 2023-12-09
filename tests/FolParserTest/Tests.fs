@@ -211,3 +211,19 @@ let ``(⊥ → ⊤) ∧ ¬∀ z (¬z = 1 ∧ ¬¬abc > 1 → z < 157)`` () =
                 )
             ))
     | Failure(errorMessage, _, _) -> errorMessage |> should be EmptyString
+
+[<Fact>]
+let ``$aut1()`` () =
+    match (parse """$aut1()""") with
+    | Success(literal, _, _) ->
+        literal |> should equal
+        <| BareAtom(Automaton("aut1", ([]: Term<string, int32> list)))
+    | Failure(errorMessage, _, _) -> errorMessage |> should be EmptyString
+
+[<Fact>]
+let ``$aut1(x)`` () =
+    match (parse """$aut1(x)""") with
+    | Success(literal, _, _) ->
+        literal |> should equal
+        <| BareAtom(Automaton("aut1", ([ Var("x") ]: Term<string, int32> list)))
+    | Failure(errorMessage, _, _) -> errorMessage |> should be EmptyString

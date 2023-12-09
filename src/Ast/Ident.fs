@@ -11,7 +11,7 @@ type Scope(init, map) =
     let map = map
     let mutable counter = init
 
-    member _.Enter(names: string list) =
+    member this.Enter(names: string list) =
         List.fold
             (fun map name ->
                 counter <- counter + 1
@@ -20,9 +20,11 @@ type Scope(init, map) =
             names
         |> fun newMap -> Scope(counter, newMap)
 
-    member _.Look(name) =
+    member this.Look(name) =
         Map.tryFind name map
         |> Option.defaultWith (fun () -> failwith $"Undefined name %s{name}")
         |> fun value -> Id(value, name)
+
+    member this.Counter() = counter
 
 let start () = Scope(-1, Map.empty)

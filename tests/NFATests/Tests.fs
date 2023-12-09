@@ -8,7 +8,7 @@ open Ast.Common
 
 let NfaResultToBool result =
     match result with
-    | Accept _ -> true
+    | Accept -> true
     | Fail _ -> false
 
 [<Fact>]

@@ -1,10 +1,11 @@
 ﻿module PeanutProver.NFA.FolToNFA
 
+open System.Collections.Generic
 open Ast.Ast
 open PeanutProver.Automata
 open PeanutProver.NFA.Common
 
-let convertAtom atom =
+let convertAtom atom (_automata: Dictionary<_, _>) =
     match atom with
     | Less(left, right) ->
         match left, right with
@@ -38,7 +39,20 @@ let convertAtom atom =
             | Var b -> PredefinedAutomata.fa_constant_eq a, [ b ]
             | e -> failwithf $"Unsupported: {e}"
         | e -> failwithf $"Unsupported term {e}"
-    | e -> failwithf $"Unsupported atom {e}"
+    | Automaton(name, terms) ->
+        match _automata.TryGetValue name with
+        | true, (_, automaton) ->
+            automaton,
+            (terms
+             |> List.map (fun t ->
+                 match t with
+                 | Var a -> a
+                 | _ -> failwithf $"Automaton {name} can only accept vars"))
+        | false, _ -> failwithf $"Automaton {name} is not found"
+
+    | True -> failwith "True is not implemented"
+    | False -> failwith "False is not implemented"
+    | Greater(term, term1) -> failwith "> is not implemented"
 
 let removeRepetitions (nfa: NFA) vars =
     let new_vars = vars |> Seq.distinct |> List.ofSeq
@@ -56,12 +70,15 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
     let transitions2 = renumber_transitions transitions2 var_number indices2
     transitions1, transitions2, new_vars
 
-let rec buildProver ast =
+let rec buildProver ast _automata =
     match ast with
-    | BareAtom a -> convertAtom a ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
+    | BareAtom a ->
+        convertAtom a _automata
+        ||> removeRepetitions
+        |> (fun (nfa, s) -> NFA.minimization nfa, s)
     | Or(left, right) ->
-        let nfa_left, left_vars = buildProver left
-        let nfa_right, right_vars = buildProver right
+        let nfa_left, left_vars = buildProver left _automata
+        let nfa_right, right_vars = buildProver right _automata
 
         let transitions_left, transitions_right, new_vars =
             makeCompatible nfa_left.Transitions left_vars nfa_right.Transitions right_vars
@@ -73,8 +90,8 @@ let rec buildProver ast =
 
         NFA.union new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | And(left, right) ->
-        let nfa_left, left_vars = buildProver left
-        let nfa_right, right_vars = buildProver right
+        let nfa_left, left_vars = buildProver left _automata
+        let nfa_right, right_vars = buildProver right _automata
 
         let transitions_left, transitions_right, new_vars =
             makeCompatible nfa_left.Transitions left_vars nfa_right.Transitions right_vars
@@ -86,12 +103,19 @@ let rec buildProver ast =
 
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
-        let nfa, vars = buildProver expr
+        let nfa, vars = buildProver expr _automata
         NFA.complement nfa |> NFA.minimization, vars
     | Exists(names, expr) ->
-        let nfa, vars = buildProver expr
+        let nfa, vars = buildProver expr _automata
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa |> NFA.minimization, vars
+        nfa |> NFA.quotientZero, vars
+    | Forall(names, expr) ->
+        let nfa, vars = buildProver (Not expr) _automata
+        let nfa = nfa |> NFA.complement
+        let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
+        let nfa = NFA.projection nfa indices_to_squash
+        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
+        nfa |> NFA.quotientZero, vars
     | e -> failwithf $"Unsupported literal {e}."

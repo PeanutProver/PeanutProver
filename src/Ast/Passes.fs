@@ -20,6 +20,8 @@ let assignId scope =
         | Equals(left, right) -> Equals <| (term scope left, term scope right)
         | Less(left, right) -> Less(term scope left, term scope right)
         | Greater(left, right) -> Greater(term scope left, term scope right)
+        | Automaton(name, terms) -> Automaton(name, terms |> List.map (term scope))
+
 
     let rec liter (scope: Ident.Scope) lit =
         let sameScope = liter scope in
@@ -68,6 +70,7 @@ let substituteConstant globals values =
         | Equals(left, right) -> Equals <| (term left, term right)
         | Less(left, right) -> Less(term left, term right)
         | Greater(left, right) -> Greater(term left, term right)
+        | Automaton(name, terms) -> Automaton(name, terms |> List.map term)
 
     let rec liter =
         function
@@ -98,8 +101,7 @@ let grab_names =
 
     let rec atom =
         function
-        | True
-        | False -> []
+        | (True | False) -> []
         | Equals(left, right)
         | Less(left, right)
         | Greater(left, right) -> filter (term left) (term right)
@@ -115,3 +117,94 @@ let grab_names =
         | Forall(_, next) -> liter next
 
     liter
+
+
+let rec goToTerm (scope: Scope) (term: Term<id, _>) vars newVars atoms =
+    let makeEq t x y z = Equals(t (x, y), z)
+
+    let genNewVar (scope: Scope) =
+        let newVarName = $"e{scope.Counter() + 1}"
+        let newScope = scope.Enter([ newVarName ])
+        Var(Id(newScope.Counter(), newVarName)), newScope
+
+    match term with
+    | Var a -> [ Var a ], [], [], scope
+    | Const a -> [ Const a ], [], [], scope
+    | Plus(term1, term2) ->
+        match (term1, term2) with
+        | Var a, Var b ->
+            let (newVar, newScope) = genNewVar scope
+            [ Var a; Var b ], [ newVar ], [ makeEq Plus (Var a) (Var b) newVar ], newScope
+        | Plus(termP1, Var b), Var c ->
+            let vars, newVars, atoms, scope' =
+                goToTerm scope (Plus(termP1, Var b)) vars newVars atoms
+
+            let ve = newVars |> List.last
+            let nve, newScope = genNewVar scope'
+            vars @ [ Var c ], newVars @ [ nve ], atoms @ [ makeEq Plus ve (Var c) nve ], newScope
+        | _ -> vars, newVars, atoms, scope
+    | _ -> vars, newVars, atoms, scope
+
+let rec truncateTerms scope (literal: Literal<id, _>) =
+    match literal with
+    | Exists(vars, literal') -> Exists(vars, truncateTerms scope literal')
+    | And(expr1, expr2) -> And(truncateTerms scope expr1, truncateTerms scope expr2)
+    | Or(expr1, expr2) -> Or(truncateTerms scope expr1, truncateTerms scope expr2)
+    | BareAtom atom ->
+        match atom with
+        | Equals(term1, term2) ->
+            match term2 with
+            | Var b ->
+                match term1 with
+                | Var a -> literal
+                | _ ->
+                    let v, nv, atoms, scope' = (goToTerm scope term1 [] [] [])
+
+                    if nv.Length = 1 then
+                        literal
+                    else
+                        Exists(
+                            (nv
+                             |> List.map (fun x ->
+                                 let (Var e) = x
+                                 e)),
+                            List.foldBack
+                                (fun a acc -> And(BareAtom a, acc))
+                                atoms
+                                (BareAtom(Equals(List.last nv, Var b)))
+                        )
+            | _ -> literal
+        | Automaton(name, terms) ->
+            let newVars, atoms, usableInAutomatonVars =
+                terms
+                |> List.map (fun x ->
+                    let (vars, newVars, atoms, _) = goToTerm scope x [] [] []
+
+                    (newVars,
+                     atoms,
+                     if newVars.Length = 0 then
+                         List.last vars
+                     else
+                         List.last newVars))
+                |> List.unzip3
+                |> fun (newVarsList, atomsList, usableInAutomatonVars) ->
+                    (List.concat newVarsList, List.concat atomsList, usableInAutomatonVars)
+
+            if newVars.Length = 0 then
+                literal
+            else
+                Exists(
+                    (newVars
+                     |> List.map (fun x ->
+                         let (Var e) = x
+                         e)),
+                    List.foldBack
+                        (fun a acc -> And(BareAtom a, acc))
+                        atoms
+                        (BareAtom(Automaton(name, usableInAutomatonVars)))
+                )
+
+        | _ -> literal
+    | Not literal -> Not(truncateTerms scope literal)
+    | Implies(literal, literal1) -> Implies(truncateTerms scope literal, truncateTerms scope literal1)
+    | Forall(ids, literal) -> Forall(ids, (truncateTerms scope literal))
