@@ -27,10 +27,15 @@ let convertAtom atom =
                 match term1, term2 with
                 | Var b, Var c -> PredefinedAutomata.nfa_bitwise_minimum, [ b; c; a ]
                 | e -> failwithf $"Unsupported: {e}"
+            | Const b -> PredefinedAutomata.fa_constant_eq b, [ a ]
             | e -> failwithf $"Unsupported term {e}"
         | BitwiseMinimum(term1, term2) ->
             match term1, term2, right with
             | Var a, Var b, Var c -> PredefinedAutomata.nfa_bitwise_minimum, [ a; b; c ]
+            | e -> failwithf $"Unsupported: {e}"
+        | Const a ->
+            match right with
+            | Var b -> PredefinedAutomata.fa_constant_eq a, [ b ]
             | e -> failwithf $"Unsupported: {e}"
         | e -> failwithf $"Unsupported term {e}"
     | e -> failwithf $"Unsupported atom {e}"
