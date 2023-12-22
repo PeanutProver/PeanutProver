@@ -4,6 +4,14 @@ open Ast.Common
 
 type State = { Name: string; Id: int }
 
+module State =
+    let seq_name sts =
+        let name = sts |> Seq.map (fun { Name = x } -> x) |> String.concat ""
+
+        let number = 0 // TODO number
+
+        { Name = name; Id = number }
+
 type Result =
     | Accept
     | Fail of State seq
@@ -29,6 +37,14 @@ type NFA(startState, finalStates: _ seq, transitions) =
     member this.StartState = startState
     member this.FinalStates = finalStates
     member this.Transitions = transitions
+    member this.AllStates = 
+        let sourceStates = Map.keys transitions |> Set.ofSeq 
+        let destinationStates = transitions |> Map.values |> Seq.map Map.values |> Seq.concat |> Seq.concat |> Set.ofSeq 
+
+        let startSet = Set.singleton startState 
+        let finalState = Set.ofSeq finalStates 
+
+        Seq.fold Set.union Set.empty [sourceStates; destinationStates; startSet; finalState ]
 
     member this.Recognize input =
         recognize input <| Seq.singleton startState
@@ -66,18 +82,10 @@ type NFA(startState, finalStates: _ seq, transitions) =
         let dot = this.ToDot()
         System.IO.File.WriteAllText(filePath, dot)
 
-    member this.ToDFA =
-        let start = Seq.singleton startState in
+    member this.ToDFA () =
+        let states = this.AllStates
 
-        let states =
-            (let keys = transitions |> Map.keys in
-
-             let values =
-                 transitions |> Map.values |> Seq.map Map.values |> Seq.concat |> Seq.concat in
-
-             Set.ofSeq keys |> Set.union (Set.ofSeq values)) in
-
-        let powerSet = List.ofSeq states |> List.powerSet |> Set.ofList
+        let powerSet = List.ofSeq states |> List.powerSet |> Set.ofList |> Seq.filter (not << List.isEmpty)
 
         let map: (State * bit list * State seq) seq =
             transitions
@@ -91,13 +99,44 @@ type NFA(startState, finalStates: _ seq, transitions) =
 
             map
             |> Seq.filter (fun (st, _, _) -> is st)
-            |> Seq.groupBy (fun (_, bl, _) -> (bl))
-            |> Seq.map (fun ((bl), s) -> let tg = Seq.map (fun (_, _, tg) -> tg) s |> Seq.concat in (bl, tg))
-            |> fun x -> sts, x
+            |> Seq.groupBy (fun (_, bl, _) -> bl)
+            |> Seq.map (fun (bl, s) ->
+                 let tg = 
+                    Seq.map (fun (_, _, tg) -> tg) s |> Seq.concat 
+                 in (bl, tg))
+            |> fun x -> (sts, x)
 
-        powerSet |> Seq.map step 
+        let transitions = 
+            powerSet
+            |> Seq.map step
+            |> Seq.map (fun (source, blAndTarget) -> 
+                let rawMap = blAndTarget |> Seq.map (fun (bl, states) -> (bl, states |> State.seq_name |> Seq.singleton))
+                let value = Map.ofSeq rawMap
+                let key = State.seq_name source
+                
+                (key, value))
+            |> Map.ofSeq 
+
+        let startState = Seq.singleton startState |> State.seq_name
+
+        let finalStates = 
+            let isFinal states = 
+                Seq.exists (fun st -> Seq.exists ((=)st) finalStates) states 
+        
+            powerSet |> Seq.filter isFinal 
+            |> Seq.map State.seq_name 
+
+        NFA (startState, finalStates, transitions)
 
 module NFA =
+    let isDfa (fa: NFA) =
+        fa.Transitions
+        |> Map.forall (fun _ value ->
+            value
+            |> Map.values
+            |> Seq.forall (fun transitions -> transitions |> Seq.length = 1))
+
+    
     let complement (nfa: NFA) =
         NFA(
             nfa.StartState,

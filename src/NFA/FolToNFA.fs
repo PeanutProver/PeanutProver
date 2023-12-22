@@ -82,7 +82,7 @@ let rec buildProver ast =
         NFA.intersection new_nfa_left new_nfa_right, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr
-        NFA.complement nfa, vars
+        nfa.ToDFA () |> NFA.complement , vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
