@@ -104,18 +104,18 @@ let rec buildProver ast _automata =
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr _automata
-        nfa.ToDFA () |> NFA.complement , vars
+        nfa.ToDFA() |> NFA.complement |> NFA.minimization, vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr _automata
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa.ToDFA () |> NFA.quotientZero, vars
+        nfa.ToDFA() |> NFA.quotientZero |> NFA.minimization, vars
     | Forall(names, expr) ->
         let nfa, vars = buildProver (Not expr) _automata
         let nfa = nfa |> NFA.complement
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa.ToDFA () |> NFA.quotientZero, vars
+        nfa.ToDFA() |> NFA.quotientZero |> NFA.minimization, vars
     | e -> failwithf $"Unsupported literal {e}."
