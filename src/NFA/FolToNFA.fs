@@ -87,11 +87,12 @@ let rec buildProver ast =
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr
-        NFA.complement nfa |> NFA.minimization, vars
+
+        nfa.ToDFA() |> NFA.complement |> NFA.minimization, vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa |> NFA.minimization, vars
+        nfa.ToDFA() |> NFA.minimization, vars
     | e -> failwithf $"Unsupported literal {e}."
