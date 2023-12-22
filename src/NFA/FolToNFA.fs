@@ -27,10 +27,15 @@ let convertAtom atom =
                 match term1, term2 with
                 | Var b, Var c -> PredefinedAutomata.nfa_bitwise_minimum, [ b; c; a ]
                 | e -> failwithf $"Unsupported: {e}"
+            | Const b -> PredefinedAutomata.fa_constant_eq b, [ a ]
             | e -> failwithf $"Unsupported term {e}"
         | BitwiseMinimum(term1, term2) ->
             match term1, term2, right with
             | Var a, Var b, Var c -> PredefinedAutomata.nfa_bitwise_minimum, [ a; b; c ]
+            | e -> failwithf $"Unsupported: {e}"
+        | Const a ->
+            match right with
+            | Var b -> PredefinedAutomata.fa_constant_eq a, [ b ]
             | e -> failwithf $"Unsupported: {e}"
         | e -> failwithf $"Unsupported term {e}"
     | e -> failwithf $"Unsupported atom {e}"
@@ -53,7 +58,7 @@ let makeCompatible transitions1 vars1 transitions2 vars2 =
 
 let rec buildProver ast =
     match ast with
-    | BareAtom a -> convertAtom a ||> removeRepetitions
+    | BareAtom a -> convertAtom a ||> removeRepetitions |> (fun (nfa, s) -> NFA.minimization nfa, s)
     | Or(left, right) ->
         let nfa_left, left_vars = buildProver left
         let nfa_right, right_vars = buildProver right
@@ -66,7 +71,7 @@ let rec buildProver ast =
         let new_nfa_right =
             NFA(nfa_right.StartState, nfa_right.FinalStates, transitions_right)
 
-        NFA.union new_nfa_left new_nfa_right, new_vars
+        NFA.union new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | And(left, right) ->
         let nfa_left, left_vars = buildProver left
         let nfa_right, right_vars = buildProver right
@@ -79,15 +84,15 @@ let rec buildProver ast =
         let new_nfa_right =
             NFA(nfa_right.StartState, nfa_right.FinalStates, transitions_right)
 
-        NFA.intersection new_nfa_left new_nfa_right, new_vars
+        NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr
-        nfa.ToDFA () |> NFA.complement , vars
+
+        nfa.ToDFA () |> NFA.complement |> NFA.minimization, vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-
-        nfa.ToDFA (), vars
+        nfa.ToDFA () |> NFA.minimization, vars
     | e -> failwithf $"Unsupported literal {e}."

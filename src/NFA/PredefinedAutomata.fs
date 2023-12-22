@@ -156,3 +156,31 @@ let nfa_bitwise_minimum =
                   [ One; One; One ], set fail] ]
 
     NFA(start, finalStates, transitions)
+
+let fa_constant_eq (constant: int) : NFA =
+    let automatonName = $"eq_const{constant}"
+
+    let makeStateName obj = $"{automatonName}:{obj}"
+
+    let makeState i =
+        { Name = makeStateName $"bit{i}"
+          Id = i }
+
+    let constantBits = constant |> intToBits |> Seq.rev
+    let constBitNum = Seq.length constantBits
+
+    let allBitsRead = makeState constBitNum
+
+    let fail =
+        { Name = makeStateName "fail"
+          Id = constBitNum + 1 }
+
+    let transitions =
+        constantBits
+        |> Seq.mapi (fun index bit ->
+            (makeState index, Map [ [ revBit bit ], set fail; [ bit ], set (makeState (index + 1)) ]))
+        |> Map.ofSeq
+        |> Map.add fail (Map [ [ Zero ], set fail; [ One ], set fail ])
+        |> Map.add allBitsRead (Map [ [ Zero ], set allBitsRead; [ One ], set fail ])
+
+    NFA(makeState 0, set allBitsRead, transitions)
