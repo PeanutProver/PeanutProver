@@ -88,5 +88,6 @@ let rec buildProver ast =
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
         let nfa = NFA.projection nfa indices_to_squash
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
-        nfa, vars
+
+        nfa.ToDFA (), vars
     | e -> failwithf $"Unsupported literal {e}."
