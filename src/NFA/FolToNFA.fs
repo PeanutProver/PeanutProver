@@ -104,7 +104,7 @@ let rec buildProver ast _automata =
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
     | Not expr ->
         let nfa, vars = buildProver expr _automata
-        NFA.complement nfa |> NFA.minimization, vars
+        nfa.ToDFA () |> NFA.complement , vars
     | Exists(names, expr) ->
         let nfa, vars = buildProver expr _automata
         let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
