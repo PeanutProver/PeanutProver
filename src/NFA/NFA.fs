@@ -43,6 +43,37 @@ type NFA(startState, finalStates: _ seq, transitions) =
     member this.CountOfBits =
         transitions |> Map.find startState |> Map.keys |> Seq.head |> List.length
 
+    static member fixStateIds(fa: NFA) =
+        let mutable n = 0
+
+        let state_mapping =
+            fa.AllStates
+            |> Seq.map (fun s ->
+                n <- n + 1
+                (s, n - 1))
+            |> Map.ofSeq
+
+        let correctState oldState =
+            { Id = state_mapping[oldState]
+              Name = oldState.Name }
+
+        let startState = correctState fa.StartState
+
+        let transitions =
+            fa.Transitions
+            |> Map.toSeq
+            |> Seq.map (fun (sstate, strs) ->
+                (sstate |> correctState,
+                 strs
+                 |> Map.toSeq
+                 |> Seq.map (fun (letter, newStates) -> (letter, newStates |> Seq.map correctState))
+                 |> Map.ofSeq))
+            |> Map.ofSeq
+
+        let finalStates = fa.FinalStates |> Seq.map correctState
+
+        NFA(startState, finalStates, transitions)
+
     member this.StartState = startState
     member this.FinalStates = finalStates
     member this.Transitions = transitions
@@ -143,15 +174,6 @@ type NFA(startState, finalStates: _ seq, transitions) =
 
         let lookUpState s = Map.find s newStateMap
 
-        printfn "Source start states"
-        printfn "%A" startState
-
-        printfn "Source transitions"
-        printfn "%A" transitions
-
-        printfn "Source final states"
-        printfn "%A" finalStates
-
         let map: (State * bit list * State seq) seq =
             transitions
             |> Map.map (fun _ v -> Map.toSeq v)
@@ -191,16 +213,7 @@ type NFA(startState, finalStates: _ seq, transitions) =
 
             powerSet |> Seq.filter isFinal |> Seq.map lookUpState
 
-        printfn "Final start states"
-        printfn "%A" startState
-
-        printfn "Final transitions"
-        printfn "%A" transitions
-
-        printfn "Final final states"
-        printfn "%A" finalStates
-
-        NFA(startState, finalStates, transitions)
+        NFA.fixStateIds (NFA(startState, finalStates, transitions))
 
 module NFA =
     let isDfa (fa: NFA) =
@@ -431,7 +444,7 @@ module NFA =
             let transitionsFromStart =
                 Map.filter (fun stateFrom _ -> Set.contains stateFrom reachable) newTransitions
 
-            NFA(newStartState, newFinalStates, transitionsFromStart)
+            NFA.fixStateIds (NFA(newStartState, newFinalStates, transitionsFromStart))
         else
             nfa
 
