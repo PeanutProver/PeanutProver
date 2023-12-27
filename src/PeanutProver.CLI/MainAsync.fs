@@ -13,6 +13,7 @@ open PeanutProver.NFA
 open PeanutProver.NFA.Common
 open PeanutProver.Automata
 open Ast.Common
+open Ast.Passes
 
 type Operation<'a, 'b> =
     | Def of string * string list option * Literal<'a, 'b>
@@ -31,7 +32,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
 * eval <name>[(<bound vars)] -- Evaluate automaton with optionally filled bound variables
 * show <name> -- Show formula that was used to construct automaton
 * help -- Print this message
-* quit -- quit application
+* quit -- Quit application
 """
 
     let _cancellationToken = hostApplicationLifetime.ApplicationStopping
@@ -62,13 +63,13 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
             let vars = vars |> Option.toList |> List.concat in
             // let distinct = vars |> Seq.distinct |> Seq.length in
             // if distinct != vars.Length then failwith "Vars must be distinct!"
-            let startScope = vars |> (Ident.start ()).Enter in
+            let startScope = vars |> (start ()).Enter in
 
-            let formula = Passes.assignId startScope formula in
+            let formula = assignId startScope formula |> truncateTerms startScope in
 
             let get_name (Id(_, name)) = name
 
-            let nfa, automation_vars = FolToNFA.buildProver formula
+            let nfa, automation_vars = FolToNFA.buildProver formula _automata
 
             let automation_indices =
                 automation_vars
@@ -88,7 +89,7 @@ type MainAsync(hostApplicationLifetime: IHostApplicationLifetime) =
                     args
                     |> Option.toList
                     |> List.concat
-                    |> List.map Common.strToBits
+                    |> List.map strToBits
                     |> List.map Seq.toList
 
                 let max_size =

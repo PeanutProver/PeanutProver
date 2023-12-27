@@ -1,0 +1,89 @@
+Source start states
+{ Name = "sum:noCarry"
+  Id = 0 }
+Source transitions
+map
+  [({ Name = "sum:carry"
+      Id = 1 },
+    map
+      [([Zero], seq [{ Name = "sum:fail"
+                       Id = 2 }; { Name = "sum:fail"
+                                   Id = 2 }]);
+       ([One], seq [{ Name = "sum:noCarry"
+                      Id = 0 }; { Name = "sum:carry"
+                                  Id = 1 }])]);
+   ({ Name = "sum:fail"
+      Id = 2 },
+    map
+      [([Zero], seq [{ Name = "sum:fail"
+                       Id = 2 }; { Name = "sum:fail"
+                                   Id = 2 }]);
+       ([One], seq [{ Name = "sum:fail"
+                      Id = 2 }; { Name = "sum:fail"
+                                  Id = 2 }])]);
+   ({ Name = "sum:noCarry"
+      Id = 0 },
+    map
+      [([Zero], seq [{ Name = "sum:noCarry"
+                       Id = 0 }; { Name = "sum:carry"
+                                   Id = 1 }]);
+       ([One], seq [{ Name = "sum:fail"
+                      Id = 2 }; { Name = "sum:fail"
+                                  Id = 2 }])])]
+Source final states
+seq [{ Name = "sum:noCarry"
+       Id = 0 }]
+Final start states
+{ Name = "sum:noCarry"
+  Id = 0 }
+Final transitions
+map
+  [({ Name = "sum:carry"
+      Id = 1 },
+    map
+      [([Zero], seq [{ Name = "sum:fail"
+                       Id = 2 }]); ([One], seq [{ Name = "sum:noCarrysum:carry"
+                                                  Id = 1 }])]);
+   ({ Name = "sum:carrysum:fail"
+      Id = 3 },
+    map
+      [([Zero], seq [{ Name = "sum:fail"
+                       Id = 2 }]);
+       ([One], seq [{ Name = "sum:noCarrysum:carrysum:fail"
+                      Id = 3 }])]);
+   ({ Name = "sum:carrysum:failsum:noCarry"
+      Id = 3 },
+    map
+      [([Zero], seq [{ Name = "sum:failsum:noCarrysum:carry"
+                       Id = 3 }]);
+       ([One], seq [{ Name = "sum:noCarrysum:carrysum:fail"
+                      Id = 3 }])]);
+   ({ Name = "sum:carrysum:noCarry"
+      Id = 1 },
+    map
+      [([Zero], seq [{ Name = "sum:failsum:noCarrysum:carry"
+                       Id = 3 }]);
+       ([One], seq [{ Name = "sum:noCarrysum:carrysum:fail"
+                      Id = 3 }])]);
+   ({ Name = "sum:fail"
+      Id = 2 },
+    map [([Zero], seq [{ Name = "sum:fail"
+                         Id = 2 }]); ([One], seq [{ Name = "sum:fail"
+                                                    Id = 2 }])]);
+   ({ Name = "sum:failsum:noCarry"
+      Id = 2 },
+    map [([Zero], seq [{ Name = "sum:failsum:noCarrysum:carry"
+                         Id = 3 }]); ([One], seq [{ Name = "sum:fail"
+                                                    Id = 2 }])]);
+   ({ Name = "sum:noCarry"
+      Id = 0 },
+    map [([Zero], seq [{ Name = "sum:noCarrysum:carry"
+                         Id = 1 }]); ([One], seq [{ Name = "sum:fail"
+                                                    Id = 2 }])])]
+Final final states
+seq [{ Name = "sum:carrysum:failsum:noCarry"
+       Id = 3 }; { Name = "sum:carrysum:noCarry"
+                   Id = 1 }; { Name = "sum:failsum:noCarry"
+                               Id = 2 }; { Name = "sum:noCarry"
+                                           Id = 0 }]
+PP: 
