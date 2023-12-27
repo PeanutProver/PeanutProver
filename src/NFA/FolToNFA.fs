@@ -102,6 +102,7 @@ let rec buildProver ast _automata =
             NFA(nfa_right.StartState, nfa_right.FinalStates, transitions_right)
 
         NFA.intersection new_nfa_left new_nfa_right |> NFA.minimization, new_vars
+    | Implies(left, right) -> buildProver (Or(Not left, right)) _automata
     | Not expr ->
         let nfa, vars = buildProver expr _automata
         nfa.ToDFA() |> NFA.complement |> NFA.minimization, vars
@@ -112,10 +113,5 @@ let rec buildProver ast _automata =
         let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
         nfa.ToDFA() |> NFA.quotientZero |> NFA.minimization, vars
     | Forall(names, expr) ->
-        let nfa, vars = buildProver (Not expr) _automata
-        let nfa = nfa |> NFA.complement
-        let indices_to_squash = List.map (fun var -> List.findIndex ((=) var) vars) names
-        let nfa = NFA.projection nfa indices_to_squash
-        let vars = List.filter (fun x -> not <| List.exists ((=) x) names) vars
+        let nfa, vars = buildProver (Not(Exists(names, Not expr))) _automata
         nfa.ToDFA() |> NFA.quotientZero |> NFA.minimization, vars
-    | e -> failwithf $"Unsupported literal {e}."
